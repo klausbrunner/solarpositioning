@@ -1,7 +1,7 @@
 solarpositioning
 ================
 
-This is a Java library containing algorithms for finding the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Currently, the [PSA](http://dx.doi.org/10.1016/S0038-092X(00)00156-0) algorithm by Blanco-Muriel et al. and the [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) algorithm by Reda and Andreas are included.
+This is a Java library containing algorithms for finding the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Currently, the <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> algorithm by Blanco-Muriel et al. and the [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) algorithm by Reda and Andreas are included.
 
 Usage
 -----
