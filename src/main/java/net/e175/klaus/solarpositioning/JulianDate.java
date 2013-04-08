@@ -23,8 +23,7 @@ public final class JulianDate {
 	 * @param date
 	 */
 	public JulianDate(final GregorianCalendar date) {
-		final GregorianCalendar utcCalendar = createGmtCalendar(date);
-		this.calendar = utcCalendar;
+		this.calendar = createGmtCalendar(date);
 		this.julianDate = calcJulianDate();
 		this.deltaT = 0.0;
 	}
@@ -36,12 +35,11 @@ public final class JulianDate {
 	 * @param deltaT
 	 *            Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
 	 *            in seconds. See <a href ="http://maia.usno.navy.mil/ser7/deltat.preds">http://maia.
-	 *            usno.navy.mil/ser7/deltat.preds</a> for values. For the year 2011, a reasonably accurate default would
+	 *            usno.navy.mil/ser7/deltat.preds</a> for values. For the year 2013, a reasonably accurate default would
 	 *            be 67.
 	 */
 	public JulianDate(final GregorianCalendar date, final double deltaT) {
-		final GregorianCalendar utcCalendar = createGmtCalendar(date);
-		this.calendar = utcCalendar;
+		this.calendar = createGmtCalendar(date);
 		this.julianDate = calcJulianDate();
 		this.deltaT = deltaT;
 	}

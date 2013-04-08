@@ -38,7 +38,7 @@ Which algorithm should I use?
 
 When in doubt, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
 
-If speed is critical (e.g. you need to calculate lots of positions), consider using PSA. Note however that it's highly optimised for its specified time window (1999-2005), and will be drastically less accurate outside of it.
+If speed is critical (e.g. you need to calculate lots of positions), consider using PSA. Note however that it's highly optimised for its specified time window (1999-2015), and will be drastically less accurate outside of it.
 
 A fast, yet still accurate alternative would be the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithm, but that's not implemented yet.
 
