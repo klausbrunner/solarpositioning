@@ -28,7 +28,7 @@ public class JulianDateTest {
 	@Test
 	public void testWithTimeZone() {
 		GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
-		time.set(2003, 9, 17, 12, 30, 30); // 17 October 2003, 12:30:30-07:00
+		time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30-07:00
 		JulianDate julDate = new JulianDate(time);
 
 		assertEquals(2452930.312847, julDate.getJulianDate(), TOLERANCE);
@@ -37,7 +37,7 @@ public class JulianDateTest {
 	@Test
 	public void testY2K() {
 		GregorianCalendar utcTime = createCalendar();
-		utcTime.set(2000, 0, 1, 12, 0, 0);
+		utcTime.set(2000, Calendar.JANUARY, 1, 12, 0, 0);
 		JulianDate julDate = new JulianDate(utcTime);
 
 		assertEquals(2451545.0, julDate.getJulianDate(), TOLERANCE);
@@ -46,7 +46,7 @@ public class JulianDateTest {
 	@Test
 	public void testPre1000() {
 		GregorianCalendar utcTime = createCalendar();
-		utcTime.set(837, 3, 10, 7, 12, 0);
+		utcTime.set(837, Calendar.APRIL, 10, 7, 12, 0);
 		JulianDate julDate = new JulianDate(utcTime);
 
 		assertEquals(2026871.8, julDate.getJulianDate(), TOLERANCE);
@@ -55,7 +55,7 @@ public class JulianDateTest {
 	@Test
 	public void testPre0() {
 		GregorianCalendar utcTime = createCalendar();
-		utcTime.set(123, 11, 31, 0, 0, 0);
+		utcTime.set(123, Calendar.DECEMBER, 31, 0, 0, 0);
 		utcTime.set(Calendar.ERA, GregorianCalendar.BC);
 		JulianDate julDate = new JulianDate(utcTime);
 
@@ -65,7 +65,7 @@ public class JulianDateTest {
 	@Test
 	public void testPre02() {
 		GregorianCalendar utcTime = createCalendar();
-		utcTime.set(122, 0, 1, 0, 0, 0);
+		utcTime.set(122, Calendar.JANUARY, 1, 0, 0, 0);
 		utcTime.set(Calendar.ERA, GregorianCalendar.BC);
 		JulianDate julDate = new JulianDate(utcTime);
 
@@ -75,7 +75,7 @@ public class JulianDateTest {
 	@Test
 	public void testJulian0() {
 		GregorianCalendar utcTime = createCalendar();
-		utcTime.set(4712, 0, 1, 12, 0, 0);
+		utcTime.set(4712, Calendar.JANUARY, 1, 12, 0, 0);
 		utcTime.set(Calendar.ERA, GregorianCalendar.BC);
 		JulianDate julDate = new JulianDate(utcTime);
 

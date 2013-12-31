@@ -42,6 +42,11 @@ If speed is critical (e.g. you need to calculate lots of positions), consider us
 
 A fast, yet still accurate alternative would be the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithm, but that's not implemented yet.
 
+Is the code thread-safe?
+------------------------
+
+Yes. None of the classes hold any mutable shared state. As the calculation is obviously CPU-bound, explicit multithreading does make sense whenever a lot of positions need to be calculated.
+
 How do I get the time of sunrise/sunset?
 ----------------------------------------
 
