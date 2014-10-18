@@ -1,9 +1,13 @@
-*.class
-
 # Package Files #
-*.jar
-*.war
-*.ear
+*.class
 /.idea/
 /*.iml
 /target/
+/build/
+
+# OS generated files
+.DS_Store
+
+# Gradle related files
+.gradle
+.settings

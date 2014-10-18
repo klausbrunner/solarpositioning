@@ -1,0 +1,14 @@
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    baseName = 'solarpositioning'
+    version = '0.0.5-SNAPSHOT'
+}
+
+dependencies {
+    testCompile 'junit:junit:4.11'
+}
