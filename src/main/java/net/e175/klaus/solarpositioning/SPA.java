@@ -39,9 +39,9 @@ public final class SPA {
 	 *            Observer's elevation, in meters.
 	 * @param deltaT
 	 *            Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
-	 *            in seconds. See <a href ="http://maia.usno.navy.mil/ser7/deltat.preds">http://maia.
-	 *            usno.navy.mil/ser7/deltat.preds</a> for values. For the year 2011, a reasonably accurate default would
-	 *            be 67.
+	 *            in seconds. See
+	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html"></a>http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
+	 *            For the year 2015, a reasonably accurate default would be 68.
 	 * @param pressure
 	 *            Annual average local pressure, in millibars.
 	 * @param temperature
