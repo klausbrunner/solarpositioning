@@ -40,7 +40,7 @@ public final class SPA {
 	 * @param deltaT
 	 *            Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
 	 *            in seconds. See
-	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html"></a>http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
+	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
 	 *            For the year 2015, a reasonably accurate default would be 68.
 	 * @param pressure
 	 *            Annual average local pressure, in millibars.
