@@ -7,6 +7,20 @@ This is a Java library containing algorithms for finding the topocentric solar c
 Usage
 -----
 
+### Maven coordinates
+
+```xml
+    <dependency>
+        <groupId>net.e175.klaus</groupId>
+        <artifactId>solarpositioning</artifactId>
+        <version>0.0.5</version> <!-- or whatever latest release is -->
+    </dependency>
+```
+
+Occasional snapshots are deployed to https://oss.sonatype.org/content/repositories/snapshots
+
+### Code
+
 ```java
 import net.e175.klaus.solarpositioning.*;
 
