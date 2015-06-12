@@ -1,7 +1,7 @@
 solarpositioning
 ================
 
-This is a Java library containing algorithms for finding the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Currently, the <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> algorithm by Blanco-Muriel et al. and the [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) algorithm by Reda and Andreas are included.
+This is a Java library containing algorithms for finding the topocentric solar coordinates, i.e. the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Currently, the <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> algorithm by Blanco-Muriel et al. and the [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) algorithm by Reda and Andreas are included.
 
 Usage
 -----
@@ -40,7 +40,7 @@ When in doubt, use SPA. It's widely considered the reference algorithm for solar
 
 If speed is critical (e.g. you need to calculate lots of positions), consider using PSA. Note however that it's highly optimised for its specified time window (1999-2015), and will be drastically less accurate outside of it.
 
-A fast, yet still accurate alternative would be the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithm, but that's not implemented yet.
+A fast, yet still accurate alternative would be one of the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithms, but that's not implemented yet.
 
 Is the code thread-safe?
 ------------------------
