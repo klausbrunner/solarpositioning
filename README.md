@@ -1,20 +1,17 @@
-solarpositioning
-================
+# solarpositioning
 
 This is a Java library containing algorithms for finding the topocentric solar coordinates, i.e. the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> by Blanco-Muriel et al.
 
-
-Usage
------
+## Usage
 
 ### Maven coordinates
 
 ```xml
-    <dependency>
-        <groupId>net.e175.klaus</groupId>
-        <artifactId>solarpositioning</artifactId>
-        <version>0.0.5</version> <!-- or whatever latest release is -->
-    </dependency>
+<dependency>
+    <groupId>net.e175.klaus</groupId>
+    <artifactId>solarpositioning</artifactId>
+    <version>0.0.5</version> <!-- or whatever latest release is -->
+</dependency>
 ```
 
 Occasional snapshots are deployed to https://oss.sonatype.org/content/repositories/snapshots
@@ -42,8 +39,7 @@ public class App {
 }
 ```
 
-Which algorithm should I use?
------------------------------
+### Which algorithm should I use?
 
 When in doubt, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
 
@@ -51,12 +47,10 @@ If speed is critical (e.g. you need to calculate lots of positions), consider us
 
 A fast, yet still accurate alternative would be one of the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithms, but that's not implemented yet.
 
-Is the code thread-safe?
-------------------------
+### Is the code thread-safe?
 
 Yes. None of the classes hold any mutable shared state. As the calculation is obviously CPU-bound, explicit multithreading does make sense whenever a lot of positions need to be calculated.
 
-How do I get the time of sunrise/sunset?
-----------------------------------------
+### How do I get the time of sunrise/sunset?
 
 Not implemented yet. (Of course you could just search for the time when the zenith angle is 90° by calculating for several times, but that's neither efficient nor elegant.)
