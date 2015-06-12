@@ -9,9 +9,15 @@ Usage
 
 ### Maven coordinates
 
-At the moment, only occasional snapshots are deployed to https://oss.sonatype.org/content/repositories/snapshots
+```xml
+    <dependency>
+        <groupId>net.e175.klaus</groupId>
+        <artifactId>solarpositioning</artifactId>
+        <version>0.0.5</version> <!-- or whatever latest release is -->
+    </dependency>
+```
 
-Release deployments to Maven Central are in preparation.
+Occasional snapshots are deployed to https://oss.sonatype.org/content/repositories/snapshots
 
 ### Code
 
