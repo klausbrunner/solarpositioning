@@ -23,7 +23,7 @@ public class AzimuthZenithAngle {
 
 	@Override
 	public String toString() {
-		return String.format("azimuth %.6f deg, zenith angle %.6f deg", azimuth, zenithAngle);
+		return String.format("azimuth %.6f°, zenith angle %.6f°", azimuth, zenithAngle);
 	}
 
 }

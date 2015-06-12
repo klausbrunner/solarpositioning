@@ -1,7 +1,8 @@
 solarpositioning
 ================
 
-This is a Java library containing algorithms for finding the topocentric solar coordinates, i.e. the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Currently, the <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> algorithm by Blanco-Muriel et al. and the [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) algorithm by Reda and Andreas are included.
+This is a Java library containing algorithms for finding the topocentric solar coordinates, i.e. the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> by Blanco-Muriel et al.
+
 
 Usage
 -----
@@ -15,17 +16,11 @@ public class App {
     final double latitude = 48.21;
     final double longitude = 16.37;
 
-    AzimuthZenithAngle position = PSA.calculateSolarPosition(dateTime,
-                                                             latitude,
-                                                             longitude);
-    System.out.println("PSA: " + position);
-
-
     position = SPA.calculateSolarPosition(dateTime,
                                           latitude,
                                           longitude,
                                           190, // elevation
-                                          67, // delta T
+                                          68, // delta T
                                           1010, // avg. air pressure
                                           11); // avg. air temperature
     System.out.println("SPA: " + position);

@@ -43,9 +43,10 @@ public final class SPA {
 	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
 	 *            For the year 2015, a reasonably accurate default would be 68.
 	 * @param pressure
-	 *            Annual average local pressure, in millibars.
+	 *            Annual average local pressure, in millibars (or hectopascals). Used for refraction
+	 *            correction. If unsure, 1000 is a reasonable default.
 	 * @param temperature
-	 *            Annual average local temperature, in degrees Celsius.
+	 *            Annual average local temperature, in degrees Celsius. Used for refraction correction.
 	 * @return Topocentric solar position (azimuth measured eastward from north)
 	 * 
 	 * @see AzimuthZenithAngle
