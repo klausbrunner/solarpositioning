@@ -17,6 +17,8 @@ import java.util.TimeZone;
  * minutes of arc for the period 1999–2015."
  * 
  * @author Klaus A. Brunner
+ *
+ * @deprecated PSA shouldn't be used after the year 2015.
  * 
  */
 public final class PSA {
