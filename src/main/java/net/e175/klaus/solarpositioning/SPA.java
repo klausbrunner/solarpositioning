@@ -44,9 +44,9 @@ public final class SPA {
 	 *            For the year 2015, a reasonably accurate default would be 68.
 	 * @param pressure
 	 *            Annual average local pressure, in millibars (or hectopascals). Used for refraction
-	 *            correction. If unsure, 1000 is a reasonable default.
+	 *            correction of zenith angle. If unsure, 1000 is a reasonable default.
 	 * @param temperature
-	 *            Annual average local temperature, in degrees Celsius. Used for refraction correction.
+	 *            Annual average local temperature, in degrees Celsius. Used for refraction correction of zenith angle.
 	 * @return Topocentric solar position (azimuth measured eastward from north)
 	 * 
 	 * @see AzimuthZenithAngle
@@ -129,14 +129,51 @@ public final class SPA {
 		return calculateTopocentricSolarPosition(pressure, temperature, phi, deltaPrime, hPrime);
 	}
 
+	/**
+	 * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
+	 * certain point of the Earth's surface.
+	 *
+	 * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
+	 * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
+	 * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
+	 *
+	 * This method does not perform refraction correction.
+	 *
+	 * @param date
+	 *            Observer's local date and time.
+	 * @param latitude
+	 *            Observer's latitude, in degrees (negative south of equator).
+	 * @param longitude
+	 *            Observer's longitude, in degrees (negative west of Greenwich).
+	 * @param elevation
+	 *            Observer's elevation, in meters.
+	 * @param deltaT
+	 *            Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
+	 *            in seconds. See
+	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
+	 *            For the year 2015, a reasonably accurate default would be 68.
+	 * @return Topocentric solar position (azimuth measured eastward from north)
+	 *
+	 * @see AzimuthZenithAngle
+	 */
+	public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
+															final double longitude, final double elevation, final double deltaT) {
+		return calculateSolarPosition(date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
+	}
+
+
 	private static AzimuthZenithAngle calculateTopocentricSolarPosition(final double p, final double t, final double phi,
 			final double deltaPrime, final double hPrime) {
 		// calculate topocentric zenith angle
 		final double eZero = asin(sin(phi) * sin(deltaPrime) + cos(phi) * cos(deltaPrime) * cos(hPrime));
 		final double eZeroDegrees = toDegrees(eZero);
 
-		final double deltaEdegrees = (p / 1010) * (283 / (273 + t))
-				* (1.02 / (60 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11)))));
+		// sanity check: extremely silly values for p and t are silently ignored, disabling refraction correction
+		final double deltaEdegrees = (p < 0.0 || p > 3000.0 || t < -273 || t > 273) ?
+				0.0 :
+				((p / 1010) * (283 / (273 + t))
+					* (1.02 / (60 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))))));
+
 		final double topocentricZenithAngle = 90 - (eZeroDegrees + deltaEdegrees);
 
 		// Calculate the topocentric azimuth angle

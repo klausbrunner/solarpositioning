@@ -51,5 +51,18 @@ public class SPATest {
 		assertEquals(20.4285, result.getZenithAngle(), TOLERANCE);
 	}
 
+	@Test
+	public void testSillyRefractionParameters() {
+		GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
+		time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30 LST-07:00
+
+		AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, -2, 1000);
+		assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
+		assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
+
+		result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67);
+		assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
+		assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
+	}
 
 }
