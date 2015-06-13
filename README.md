@@ -1,6 +1,6 @@
 # solarpositioning
 
-This is a Java library containing algorithms for finding the topocentric solar coordinates, i.e. the sun’s position on the sky for a given date and latitude and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> by Blanco-Muriel et al.
+This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date, latitude, and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> by Blanco-Muriel et al.
 
 ## Usage
 
@@ -27,13 +27,14 @@ public class App {
     final double latitude = 48.21;
     final double longitude = 16.37;
 
-    position = SPA.calculateSolarPosition(dateTime,
-                                          latitude,
-                                          longitude,
-                                          190, // elevation
-                                          68, // delta T
-                                          1010, // avg. air pressure
-                                          11); // avg. air temperature
+    AzimuthZenithAngle position = SPA.calculateSolarPosition(
+                                            dateTime,
+                                            latitude,
+                                            longitude,
+                                            190, // elevation (m)
+                                            68, // delta T (s)
+                                            1010, // avg. air pressure (hPa)
+                                            11); // avg. air temperature (°C)
     System.out.println("SPA: " + position);
   }
 }
@@ -53,4 +54,4 @@ Yes. None of the classes hold any mutable shared state. As the calculation is ob
 
 ### How do I get the time of sunrise/sunset?
 
-Not implemented yet. (Of course you could just search for the time when the zenith angle is 90° by calculating for several times, but that's neither efficient nor elegant.)
+See current snapshot code.

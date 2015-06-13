@@ -2,33 +2,38 @@ package net.e175.klaus.solarpositioning;
 
 import static java.lang.Math.*;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 /**
  * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
  * certain point of the Earth's surface.
- * 
+ *
  * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
  * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
- * 
+ *
  * This is <i>not</i> a port of the C code, but a re-implementation based on the published procedure.
- * 
+ *
  * @author Klaus Brunner
- * 
+ *
  */
 public final class SPA {
-	
+
+	private static final double SIN_HPRIME_0 = sin(toRadians(-0.8333));
+
 	private SPA() {
 	}
 
 	/**
 	 * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
 	 * certain point of the Earth's surface.
-	 * 
+	 *
 	 * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
 	 * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
 	 * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
-	 * 
+	 *
 	 * @param date
 	 *            Observer's local date and time.
 	 * @param latitude
@@ -48,7 +53,7 @@ public final class SPA {
 	 * @param temperature
 	 *            Annual average local temperature, in degrees Celsius. Used for refraction correction of zenith angle.
 	 * @return Topocentric solar position (azimuth measured eastward from north)
-	 * 
+	 *
 	 * @see AzimuthZenithAngle
 	 */
 	public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
@@ -161,6 +166,220 @@ public final class SPA {
 		return calculateSolarPosition(date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
 	}
 
+	private static class AlphaDelta {
+		AlphaDelta(double alpha, double delta) {
+			this.alpha = alpha;
+			this.delta = delta;
+		}
+
+		final double alpha;
+		final double delta;
+	}
+
+	public static GregorianCalendar[] calculateSunriseTransitSet(final GregorianCalendar day,
+													  final double latitude,
+													  final double longitude,
+													  final double deltaT) {
+		final GregorianCalendar dayStart = startOfDayUT(day);
+		final JulianDate jd = new JulianDate(dayStart, 0);
+
+		final double phi = toRadians(latitude);
+
+		// A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
+		final double jce = jd.getJulianEphemerisCentury();
+		final double xTerms[] = calculateNutationTerms(jce);
+		final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
+		final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
+		final double deltaPsi = calculateDeltaPsiEpsilon(deltaPsiI);
+		final double deltaEpsilon = calculateDeltaPsiEpsilon(deltaEpsilonI);
+		final double epsilonDegrees = calculateTrueObliquityOfEcliptic(jd, deltaEpsilon);
+
+		final double nuDegrees = calculateApparentSiderealTimeAtGreenwich(jd, deltaPsi, epsilonDegrees);
+
+		// A.2.2. Calculate the geocentric right ascension and declination at 0 TT for day before, same day, next day
+		final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
+		for (int i = 0; i < 3; i++) {
+			JulianDate currentJd = new JulianDate(jd.getJulianDate() + i - 1, 0);
+			double currentJme = currentJd.getJulianEphemerisMillennium();
+			AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsi, epsilonDegrees);
+			alphaDeltas[i] = ad;
+		}
+
+		final double[] m = new double[3];
+		// A.2.3. Calculate the approximate sun transit time, m0, in fraction of day
+		m[0] = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360;
+
+		// A.2.4. Calculate the local hour angle H0 corresponding to ...
+		final double acosArg = (SIN_HPRIME_0 - sin(phi * sin(toRadians(alphaDeltas[1].delta))))
+				/ (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
+		final double h0 = acos(acosArg);
+
+		final double h0Degrees = limitTo(toDegrees(h0), 180.0);
+
+		// A.2.5. Calculate the approximate sunrise time, m1 , in fraction of day,
+		m[1] = limitTo(m[0] - h0Degrees / 360.0, 1);
+
+		// A.2.6. Calculate the approximate sunset time, m2 , in fraction of day,
+		m[2] = limitTo(m[0] + h0Degrees / 360.0, 1);
+
+		m[0] = limitTo(m[0], 1);
+
+		// A.2.8. Calculate the sidereal time at Greenwich, in degrees, for the sun transit, sunrise, and sunset
+		final double[] nu = new double[3];
+		for (int i = 0; i < m.length; i++) {
+			nu[i] = nuDegrees + 360.985647 * m[i];
+		}
+
+		// A.2.9. Calculate the terms ni
+		final double[] n = new double[3];
+		for (int i = 0; i < m.length; i++) {
+			n[i] = m[i] + deltaT / 86400.0;
+		}
+
+		// A.2.10. Calculate the values alpha'i and delta'i , in degrees
+		final double a = limitIfNecessary(alphaDeltas[1].alpha - alphaDeltas[0].alpha);
+		final double aPrime = limitIfNecessary(alphaDeltas[1].delta - alphaDeltas[0].delta);
+
+		final double b = limitIfNecessary(alphaDeltas[2].alpha - alphaDeltas[1].alpha);
+		final double bPrime = limitIfNecessary(alphaDeltas[2].delta - alphaDeltas[1].delta);
+
+		final double c = b - a;
+		final double cPrime = bPrime - aPrime;
+
+		final AlphaDelta[] alphaDeltaPrimes = new AlphaDelta[3];
+		for (int i = 0; i < alphaDeltaPrimes.length; i++) {
+			double alphaPrimeI =
+					alphaDeltas[1].alpha +
+							(n[i] * (a + b + c * n[i])) / 2.0;
+			double deltaPrimeI =
+					alphaDeltas[1].delta +
+							(n[i] * (aPrime + bPrime + cPrime * n[i])) / 2.0;
+
+			alphaDeltaPrimes[i] = new AlphaDelta(alphaPrimeI, deltaPrimeI);
+		}
+
+		// A.2.11. Calculate the local hour angle for the sun transit, sunrise, and sunset
+		final double[] hPrime = new double[3];
+		for (int i = 0; i < hPrime.length; i++) {
+			double hPrimeI = nu[i] + longitude - alphaDeltaPrimes[i].alpha;
+			hPrime[i] = limitHprime(hPrimeI);
+		}
+
+		// A.2.12. Calculate the sun altitude for the sun transit, sunrise, and sunset, hi
+		final double[] h = new double[3];
+		for (int i = 0; i < h.length; i++) {
+			double deltaPrimeRad = toRadians(alphaDeltaPrimes[i].delta);
+
+			h[i] = toDegrees(asin(
+					sin(phi) * sin(deltaPrimeRad) +
+							cos(phi) * cos(deltaPrimeRad) * cos(toRadians(hPrime[i]))
+			));
+		}
+
+		// A.2.13. Calculate the sun transit, T (in fraction of day)
+		final double t = m[0] - hPrime[0] / 360.0;
+
+		// A.2.14. Calculate the sunrise, R (in fraction of day)
+		final double r = m[1] +
+				(h[1] - hPrime[0]) /
+						(360.0 * cos(toRadians(alphaDeltaPrimes[1].delta)) * cos(phi) * sin(toRadians(hPrime[1])));
+
+		// A.2.15. Calculate the sunset, S (in fraction of day)
+		final double s = m[2] +
+				(h[2] - hPrime[0]) /
+						(360.0 * cos(toRadians(alphaDeltaPrimes[2].delta)) * cos(phi) * sin(toRadians(hPrime[2])));
+
+
+		Date baseTime = dayStart.getTime();
+
+		return new GregorianCalendar[]{
+				addFractionOfDay(baseTime, r, day.getTimeZone()),
+				addFractionOfDay(baseTime, t, day.getTimeZone()),
+				addFractionOfDay(baseTime, s, day.getTimeZone())
+		};
+	}
+
+	private static GregorianCalendar addFractionOfDay(Date baseDate, double fraction, TimeZone tz) {
+		long addMillis = (long) (fraction * (24 * 60 * 60 * 1000));
+		Date newDate = new Date(baseDate.getTime() + addMillis);
+		GregorianCalendar newCalendar = new GregorianCalendar(tz);
+		newCalendar.setTime(newDate);
+		return newCalendar;
+	}
+
+	/**
+	 * limit H' values according to A.2.11
+	 */
+	private static double limitHprime(double hPrime) {
+		hPrime /= 360.0;
+		final double limited = 360.0 * (hPrime - floor(hPrime));
+
+		if (limited < -180.0) {
+			return limited + 360.0;
+		} else if (limited > 180.0) {
+			return limited - 360.0;
+		} else {
+			return limited;
+		}
+	}
+
+
+	/**
+	 * Limit to 0..1 if absolute value > 2. Refer to A.2.10 in NREL report.
+	 */
+	private static double limitIfNecessary(double val) {
+		return (Math.abs(val) > 2.0) ? limitTo(val, 1.0) : val;
+	}
+
+	// TODO: check if this can be used in calculateSolarPosition() as well
+	private static AlphaDelta calculateAlphaDelta(double jme, double deltaPsi, double epsilonDegrees) {
+		// calculate Earth heliocentric latitude, B
+		final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
+		final double bDegrees = toDegrees(calculateLBRPolynomial(jme, bTerms));
+
+		// calculate Earth radius vector, R
+		final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
+		final double r = calculateLBRPolynomial(jme, rTerms);
+
+		// calculate Earth heliocentric longitude, L
+		final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
+		final double lDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, lTerms)));
+
+		// calculate geocentric longitude, theta
+		final double thetaDegrees = limitDegreesTo360(lDegrees + 180);
+
+		// calculate geocentric latitude, beta
+		final double betaDegrees = -bDegrees;
+		final double beta = toRadians(betaDegrees);
+		final double epsilon = toRadians(epsilonDegrees);
+
+		// calculate aberration correction
+		final double deltaTau = -20.4898 / (3600 * r);
+
+		// calculate the apparent sun longitude
+		final double lambdaDegrees = thetaDegrees + deltaPsi + deltaTau;
+		final double lambda = toRadians(lambdaDegrees);
+
+		// Calculate the geocentric sun right ascension
+		final double alphaDegrees = calculateGeocentricSunRightAscension(beta, epsilon, lambda);
+		// Calculate geocentric sun declination
+		final double deltaDegrees = toDegrees(calculateGeocentricSunDeclination(beta, epsilon, lambda));
+
+		return new AlphaDelta(alphaDegrees, deltaDegrees);
+	}
+
+	private static GregorianCalendar startOfDayUT(GregorianCalendar day) {
+		final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+
+		utcCalendar.set(day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH));
+		utcCalendar.set(Calendar.ERA, day.get(Calendar.ERA));
+		utcCalendar.set(Calendar.HOUR_OF_DAY, 0);
+		utcCalendar.set(Calendar.MINUTE, 0);
+		utcCalendar.set(Calendar.SECOND, 0);
+		utcCalendar.set(Calendar.MILLISECOND, 0);
+
+		return utcCalendar;
+	}
 
 	private static AzimuthZenithAngle calculateTopocentricSolarPosition(final double p, final double t, final double phi,
 			final double deltaPrime, final double hPrime) {
@@ -255,9 +474,13 @@ public final class SPA {
 	}
 
 	private static double limitDegreesTo360(final double degrees) {
-		final double dividedDegrees = degrees / 360.0;
-		final double limited = 360.0 * (dividedDegrees - floor(dividedDegrees));
-		return (limited < 0) ? limited + 360.0 : limited;
+		return limitTo(degrees, 360.0);
+	}
+
+	private static double limitTo(final double degrees, final double max) {
+		final double dividedDegrees = degrees / max;
+		final double limited = max * (dividedDegrees - floor(dividedDegrees));
+		return (limited < 0) ? limited + max : limited;
 	}
 
 	private static double calculateLBRPolynomial(final double jme, final double[] terms) {
