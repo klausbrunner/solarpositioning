@@ -3,7 +3,6 @@ package net.e175.klaus.solarpositioning;
 import static java.lang.Math.*;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
@@ -21,7 +20,8 @@ import java.util.TimeZone;
  */
 public final class SPA {
 
-	private static final double SIN_HPRIME_0 = sin(toRadians(-0.8333));
+	private static final double HPRIME_0 = -0.8333;
+	private static final double SIN_HPRIME_0 = sin(toRadians(HPRIME_0));
 
 	private SPA() {
 	}
@@ -71,7 +71,7 @@ public final class SPA {
 
 		// calculate Earth heliocentric latitude, B
 		final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-		final double bDegrees = toDegrees(calculateLBRPolynomial(jme, bTerms));
+		final double bDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, bTerms)));
 
 		// calculate Earth radius vector, R
 		final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
@@ -177,9 +177,9 @@ public final class SPA {
 	}
 
 	public static GregorianCalendar[] calculateSunriseTransitSet(final GregorianCalendar day,
-													  final double latitude,
-													  final double longitude,
-													  final double deltaT) {
+																 final double latitude,
+																 final double longitude,
+																 final double deltaT) {
 		final GregorianCalendar dayStart = startOfDayUT(day);
 		final JulianDate jd = new JulianDate(dayStart, 0);
 
@@ -198,7 +198,7 @@ public final class SPA {
 
 		// A.2.2. Calculate the geocentric right ascension and declination at 0 TT for day before, same day, next day
 		final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < alphaDeltas.length; i++) {
 			JulianDate currentJd = new JulianDate(jd.getJulianDate() + i - 1, 0);
 			double currentJme = currentJd.getJulianEphemerisMillennium();
 			AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsi, epsilonDegrees);
@@ -281,17 +281,15 @@ public final class SPA {
 
 		// A.2.14. Calculate the sunrise, R (in fraction of day)
 		final double r = m[1] +
-				(h[1] - hPrime[0]) /
+				(h[1] - HPRIME_0) /
 						(360.0 * cos(toRadians(alphaDeltaPrimes[1].delta)) * cos(phi) * sin(toRadians(hPrime[1])));
 
 		// A.2.15. Calculate the sunset, S (in fraction of day)
 		final double s = m[2] +
-				(h[2] - hPrime[0]) /
+				(h[2] - HPRIME_0) /
 						(360.0 * cos(toRadians(alphaDeltaPrimes[2].delta)) * cos(phi) * sin(toRadians(hPrime[2])));
 
-
-		Date baseTime = dayStart.getTime();
-
+		final long baseTime = dayStart.getTimeInMillis();
 		return new GregorianCalendar[]{
 				addFractionOfDay(baseTime, r, day.getTimeZone()),
 				addFractionOfDay(baseTime, t, day.getTimeZone()),
@@ -299,11 +297,11 @@ public final class SPA {
 		};
 	}
 
-	private static GregorianCalendar addFractionOfDay(Date baseDate, double fraction, TimeZone tz) {
+	private static GregorianCalendar addFractionOfDay(final long baseDate, final double fraction, final TimeZone tz) {
 		long addMillis = (long) (fraction * (24 * 60 * 60 * 1000));
-		Date newDate = new Date(baseDate.getTime() + addMillis);
+		long newDate = baseDate + addMillis;
 		GregorianCalendar newCalendar = new GregorianCalendar(tz);
-		newCalendar.setTime(newDate);
+		newCalendar.setTimeInMillis(newDate);
 		return newCalendar;
 	}
 
@@ -323,7 +321,6 @@ public final class SPA {
 		}
 	}
 
-
 	/**
 	 * Limit to 0..1 if absolute value > 2. Refer to A.2.10 in NREL report.
 	 */
@@ -335,7 +332,7 @@ public final class SPA {
 	private static AlphaDelta calculateAlphaDelta(double jme, double deltaPsi, double epsilonDegrees) {
 		// calculate Earth heliocentric latitude, B
 		final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-		final double bDegrees = toDegrees(calculateLBRPolynomial(jme, bTerms));
+		final double bDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, bTerms)));
 
 		// calculate Earth radius vector, R
 		final double[] rTerms = calculateLBRTerms(jme, TERMS_R);

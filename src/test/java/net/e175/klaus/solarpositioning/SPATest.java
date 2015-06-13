@@ -22,8 +22,8 @@ public class SPATest {
 
 		AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, 820, 11);
 
-		assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
-		assertEquals(50.11162, result.getZenithAngle(), TOLERANCE);
+		assertEquals(194.340241, result.getAzimuth(), TOLERANCE/10);
+		assertEquals(50.111622, result.getZenithAngle(), TOLERANCE/10);
 	}
 
 	@Test
@@ -44,12 +44,12 @@ public class SPATest {
 
 		AzimuthZenithAngle result = SPA.calculateSolarPosition(time, -41, 0, 100, 0, 1000, 20);
 
-		assertEquals(359.086, result.getAzimuth(), TOLERANCE);
+		assertEquals(359.08592, result.getAzimuth(), TOLERANCE);
 		assertEquals(17.5658, result.getZenithAngle(), TOLERANCE);
 
 		result = SPA.calculateSolarPosition(time, -3, 0, 100, 0, 1000, 20);
 
-		assertEquals(180.7903, result.getAzimuth(), TOLERANCE);
+		assertEquals(180.790356, result.getAzimuth(), TOLERANCE);
 		assertEquals(20.4285, result.getZenithAngle(), TOLERANCE);
 	}
 
@@ -77,11 +77,9 @@ public class SPATest {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(time.getTimeZone());
 
-		for (GregorianCalendar re : res) {
-			System.out.println(df.format(re.getTime()));
-		}
-
-
+		assertEquals("2003-10-17T06:12:43", df.format(res[0].getTime()));
+		assertEquals("2003-10-17T11:46:04", df.format(res[1].getTime()));
+		assertEquals("2003-10-17T17:20:19", df.format(res[2].getTime()));
 	}
 
 }
