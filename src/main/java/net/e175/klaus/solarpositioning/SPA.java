@@ -166,7 +166,7 @@ public final class SPA {
 		return calculateSolarPosition(date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
 	}
 
-	private static class AlphaDelta {
+	private static final class AlphaDelta {
 		AlphaDelta(double alpha, double delta) {
 			this.alpha = alpha;
 			this.delta = delta;
@@ -176,6 +176,24 @@ public final class SPA {
 		final double delta;
 	}
 
+	/**
+	 * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day.
+	 *
+	 * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated.
+	 *            The time of day (hour, minute, second, millisecond) is ignored.
+	 * @param latitude
+	 *            Observer's latitude, in degrees (negative south of equator).
+	 * @param longitude
+	 *            Observer's longitude, in degrees (negative west of Greenwich).
+	 * @param deltaT
+	 *            Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
+	 *            in seconds. See
+	 *            <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
+	 *            For the year 2015, a reasonably accurate default would be 68.
+	 * @return An array of 3 GregorianCalendar values corresponding to the time of sunrise, sun transit, and sunset,
+	 * respectively. Note that the values for sunrise and sunset may be null: in this case, the sun stays above or
+	 * below the horizon all day.
+	 */
 	public static GregorianCalendar[] calculateSunriseTransitSet(final GregorianCalendar day,
 																 final double latitude,
 																 final double longitude,
@@ -212,14 +230,15 @@ public final class SPA {
 		// A.2.4. Calculate the local hour angle H0 corresponding to ...
 		final double acosArg = (SIN_HPRIME_0 - sin(phi * sin(toRadians(alphaDeltas[1].delta))))
 				/ (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
+		// FIXME: catch case when no sunrise/sunset
 		final double h0 = acos(acosArg);
 
 		final double h0Degrees = limitTo(toDegrees(h0), 180.0);
 
-		// A.2.5. Calculate the approximate sunrise time, m1 , in fraction of day,
+		// A.2.5. Calculate the approximate sunrise time, m1, in fraction of day,
 		m[1] = limitTo(m[0] - h0Degrees / 360.0, 1);
 
-		// A.2.6. Calculate the approximate sunset time, m2 , in fraction of day,
+		// A.2.6. Calculate the approximate sunset time, m2, in fraction of day,
 		m[2] = limitTo(m[0] + h0Degrees / 360.0, 1);
 
 		m[0] = limitTo(m[0], 1);
