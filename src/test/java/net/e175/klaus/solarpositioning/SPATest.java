@@ -1,6 +1,7 @@
 package net.e175.klaus.solarpositioning;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -80,6 +81,35 @@ public class SPATest {
 		assertEquals("2003-10-17T06:12:43", df.format(res[0].getTime()));
 		assertEquals("2003-10-17T11:46:04", df.format(res[1].getTime()));
 		assertEquals("2003-10-17T17:20:19", df.format(res[2].getTime()));
+	}
+
+	@Test
+	public void testOtherSpaExampleSunriseTransitSet() {
+		GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+		time.set(2004, Calendar.DECEMBER, 4, 12, 30, 30);
+
+		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -35.0, 0, 0);
+
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		df.setTimeZone(time.getTimeZone());
+
+		assertEquals("2004-12-04T04:38:57", df.format(res[0].getTime()));
+		assertEquals("2004-12-04T19:02:01", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
+	}
+
+	@Test
+	public void testNoSunset() {
+		GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(2 * 60 * 60 * 1000, "CEST"));
+		time.set(2015, Calendar.JUNE, 17, 12, 30, 30);
+
+		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 68);
+
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+		df.setTimeZone(time.getTimeZone());
+
+		assertNull(res[0]);
+		assertEquals("2015-06-17T12:16:55", df.format(res[1].getTime())); // NOAA calc says 12:16:50
+		assertNull(res[2]);
 	}
 
 }

@@ -230,7 +230,9 @@ public final class SPA {
 		// A.2.4. Calculate the local hour angle H0 corresponding to ...
 		final double acosArg = (SIN_HPRIME_0 - sin(phi * sin(toRadians(alphaDeltas[1].delta))))
 				/ (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
-		// FIXME: catch case when no sunrise/sunset
+
+		final boolean noSunriseOrSet = (acosArg < -1.0) || (acosArg > 1.0);
+
 		final double h0 = acos(acosArg);
 
 		final double h0Degrees = limitTo(toDegrees(h0), 180.0);
@@ -310,9 +312,9 @@ public final class SPA {
 
 		final long baseTime = dayStart.getTimeInMillis();
 		return new GregorianCalendar[]{
-				addFractionOfDay(baseTime, r, day.getTimeZone()),
+				noSunriseOrSet ? null : addFractionOfDay(baseTime, r, day.getTimeZone()),
 				addFractionOfDay(baseTime, t, day.getTimeZone()),
-				addFractionOfDay(baseTime, s, day.getTimeZone())
+				noSunriseOrSet ? null : addFractionOfDay(baseTime, s, day.getTimeZone())
 		};
 	}
 
