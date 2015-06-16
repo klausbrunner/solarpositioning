@@ -22,6 +22,7 @@ public final class SPA {
 
 	private static final double HPRIME_0 = -0.8333;
 	private static final double SIN_HPRIME_0 = sin(toRadians(HPRIME_0));
+	private static final int MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 	private SPA() {
 	}
@@ -310,20 +311,31 @@ public final class SPA {
 				(h[2] - HPRIME_0) /
 						(360.0 * cos(toRadians(alphaDeltaPrimes[2].delta)) * cos(phi) * sin(toRadians(hPrime[2])));
 
-		final long baseTime = dayStart.getTimeInMillis();
 		return new GregorianCalendar[]{
-				noSunriseOrSet ? null : addFractionOfDay(baseTime, r, day.getTimeZone()),
-				addFractionOfDay(baseTime, t, day.getTimeZone()),
-				noSunriseOrSet ? null : addFractionOfDay(baseTime, s, day.getTimeZone())
+				noSunriseOrSet ? null : addFractionOfDay(day, r),
+				addFractionOfDay(day, t),
+				noSunriseOrSet ? null : addFractionOfDay(day, s)
 		};
 	}
 
-	private static GregorianCalendar addFractionOfDay(final long baseDate, final double fraction, final TimeZone tz) {
-		long addMillis = (long) (fraction * (24 * 60 * 60 * 1000));
-		long newDate = baseDate + addMillis;
-		GregorianCalendar newCalendar = new GregorianCalendar(tz);
-		newCalendar.setTimeInMillis(newDate);
-		return newCalendar;
+	private static GregorianCalendar addFractionOfDay(GregorianCalendar day, final double fraction) {
+		GregorianCalendar dayStart = (GregorianCalendar) day.clone();
+		dayStart.set(Calendar.MINUTE, 0);
+		dayStart.set(Calendar.SECOND, 0);
+		dayStart.set(Calendar.MILLISECOND, 0);
+
+		// use noon to get offset, assuming that any DST changes happen before sunrise and noon
+		// FIXME: find a better solution, as this is potentially buggy
+		dayStart.set(Calendar.HOUR_OF_DAY, 12);
+		final int offset = day.getTimeZone().getOffset(dayStart.getTimeInMillis());
+
+		dayStart.set(Calendar.HOUR_OF_DAY, 0);
+		final double offsetFraction = (double) offset / MS_PER_DAY;
+		final int addMs = (int) (MS_PER_DAY * limitTo(fraction + offsetFraction, 1.0));
+		assert addMs >= 0 && addMs <= MS_PER_DAY;
+		dayStart.setTimeInMillis(dayStart.getTimeInMillis() + addMs);
+
+		return dayStart;
 	}
 
 	/**

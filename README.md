@@ -54,4 +54,4 @@ Yes. None of the classes hold any mutable shared state. As the calculation is ob
 
 ### How do I get the time of sunrise/sunset?
 
-See current snapshot code.
+See current snapshot code for a "beta quality" implementation.
