@@ -12,7 +12,7 @@ import org.junit.Test;
 
 public class JulianDateTest {
 
-	private static final double TOLERANCE = 0.00001;
+	private static final double TOLERANCE = 0.0000001;
 
 	@Test
 	public void testConstructor() {
@@ -80,6 +80,13 @@ public class JulianDateTest {
 		JulianDate julDate = new JulianDate(utcTime);
 
 		assertEquals(0.0, julDate.getJulianDate(), TOLERANCE);
+	}
+
+	@Test
+	public void testJulianDays() {
+		JulianDate jd = new JulianDate(2452929.500000, 0);
+		assertEquals(0.03790554, jd.getJulianCentury(), TOLERANCE);
+		assertEquals(0.00379056, jd.getJulianEphemerisMillennium(), TOLERANCE);
 	}
 
 }

@@ -13,7 +13,6 @@ import java.util.TimeZone;
  * 
  */
 public final class JulianDate {
-	private final GregorianCalendar calendar;
 	private final double julianDate;
 	private final double deltaT;
 
@@ -23,10 +22,20 @@ public final class JulianDate {
 	 * @param date
 	 */
 	public JulianDate(final GregorianCalendar date) {
-		this.calendar = createGmtCalendar(date);
-		this.julianDate = calcJulianDate();
+		GregorianCalendar utcCalendar = createUtcCalendar(date);
+		this.julianDate = calcJulianDate(utcCalendar);
 		this.deltaT = 0.0;
 	}
+
+	/**
+	 * Construct a Julian date from another.
+	 *
+	 */
+	public JulianDate(final double fromJulianDate, final double deltaT) {
+		this.julianDate = fromJulianDate;
+		this.deltaT = deltaT;
+	}
+
 
 	/**
 	 * Construct a Julian date, observing deltaT.
@@ -39,19 +48,19 @@ public final class JulianDate {
 	 *            For the year 2015, a reasonably accurate default would be 68.
 	 */
 	public JulianDate(final GregorianCalendar date, final double deltaT) {
-		this.calendar = createGmtCalendar(date);
-		this.julianDate = calcJulianDate();
+		GregorianCalendar calendar = createUtcCalendar(date);
+		this.julianDate = calcJulianDate(calendar);
 		this.deltaT = deltaT;
 	}
 
-	private GregorianCalendar createGmtCalendar(final GregorianCalendar fromCalendar) {
-		final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+	private GregorianCalendar createUtcCalendar(final GregorianCalendar fromCalendar) {
+		final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
 		utcCalendar.setTimeInMillis(fromCalendar.getTimeInMillis());
 		utcCalendar.set(Calendar.ERA, fromCalendar.get(Calendar.ERA));
 		return utcCalendar;
 	}
 
-	private double calcJulianDate() {
+	private double calcJulianDate(GregorianCalendar calendar) {
 		int y = (calendar.get(Calendar.ERA) == GregorianCalendar.AD) ? calendar.get(Calendar.YEAR) : -calendar
 				.get(Calendar.YEAR);
 		int m = calendar.get(Calendar.MONTH) + 1;
