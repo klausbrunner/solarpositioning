@@ -15,6 +15,7 @@ import org.junit.Test;
 public class SPATest {
 
 	private static final double TOLERANCE = 0.0001;
+	private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
 
 	@Test
 	public void testSpaExample() {
@@ -75,12 +76,17 @@ public class SPATest {
 
 		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		df.setTimeZone(time.getTimeZone());
+		DateFormat df = getDateFormat(time);
 
-		assertEquals("2003-10-17T06:12:43", df.format(res[0].getTime()));
-		assertEquals("2003-10-17T11:46:04", df.format(res[1].getTime()));
-		assertEquals("2003-10-17T17:20:19", df.format(res[2].getTime()));
+		assertEquals("2003-10-17T06:12:43-0700", df.format(res[0].getTime()));
+		assertEquals("2003-10-17T11:46:04-0700", df.format(res[1].getTime()));
+		assertEquals("2003-10-17T17:20:19-0700", df.format(res[2].getTime()));
+	}
+
+	private DateFormat getDateFormat(GregorianCalendar time) {
+		DateFormat df = new SimpleDateFormat(DATE_FORMAT);
+		df.setTimeZone(time.getTimeZone());
+		return df;
 	}
 
 	@Test
@@ -90,11 +96,10 @@ public class SPATest {
 
 		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -35.0, 0, 0);
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		df.setTimeZone(time.getTimeZone());
+		DateFormat df = getDateFormat(time);
 
-		assertEquals("2004-12-04T04:38:57", df.format(res[0].getTime()));
-		assertEquals("2004-12-04T19:02:01", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
+		assertEquals("2004-12-04T04:38:57+0000", df.format(res[0].getTime()));
+		assertEquals("2004-12-04T19:02:01+0000", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
 	}
 
 	@Test
@@ -104,11 +109,10 @@ public class SPATest {
 
 		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 68);
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		df.setTimeZone(time.getTimeZone());
+		DateFormat df = getDateFormat(time);
 
 		assertNull(res[0]);
-		assertEquals("2015-06-17T12:16:55", df.format(res[1].getTime())); // NOAA calc says 12:16:50
+		assertEquals("2015-06-17T12:16:55+0200", df.format(res[1].getTime())); // NOAA calc says 12:16:50
 		assertNull(res[2]);
 	}
 
@@ -119,11 +123,10 @@ public class SPATest {
 
 		GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
 
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-		df.setTimeZone(time.getTimeZone());
+		DateFormat df = getDateFormat(time);
 
-		assertEquals("2015-06-17T07:32:45", df.format(res[0].getTime()));
-		assertEquals("2015-06-17T17:11:04", df.format(res[2].getTime()));
+		assertEquals("2015-06-17T07:32:45+1200", df.format(res[0].getTime()));
+		assertEquals("2015-06-17T17:11:04+1200", df.format(res[2].getTime()));
 	}
 	
 }

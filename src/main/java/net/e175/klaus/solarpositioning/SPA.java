@@ -361,7 +361,6 @@ public final class SPA {
 		return (Math.abs(val) > 2.0) ? limitTo(val, 1.0) : val;
 	}
 
-	// TODO: check if this can be used in calculateSolarPosition() as well
 	private static AlphaDelta calculateAlphaDelta(double jme, double deltaPsi, double epsilonDegrees) {
 		// calculate Earth heliocentric latitude, B
 		final double[] bTerms = calculateLBRTerms(jme, TERMS_B);

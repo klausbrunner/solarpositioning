@@ -31,7 +31,7 @@ public class JulianDateTest {
 		time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30-07:00
 		JulianDate julDate = new JulianDate(time);
 
-		assertEquals(2452930.312847, julDate.getJulianDate(), TOLERANCE);
+		assertEquals(2452930.312847222, julDate.getJulianDate(), TOLERANCE);
 	}
 
 	@Test
