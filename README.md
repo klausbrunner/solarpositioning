@@ -32,7 +32,7 @@ public class App {
                                             latitude,
                                             longitude,
                                             190, // elevation (m)
-                                            68, // delta T (s)
+                                            DeltaT.estimate(dateTime), // delta T (s)
                                             1010, // avg. air pressure (hPa)
                                             11); // avg. air temperature (°C)
     System.out.println("SPA: " + position);
