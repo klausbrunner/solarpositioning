@@ -54,4 +54,19 @@ Yes. None of the classes hold any mutable shared state. As the calculation is ob
 
 ### How do I get the time of sunrise/sunset?
 
-See current snapshot code for a "beta quality" implementation.
+The SPA class now includes a method to calculate the times of sunrise, sun transit, and sunset in one fell swoop:
+
+```java
+GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 68);
+```
+
+Note that the times of sunrise and sunset may be NULL if the sun never sets or rises during the specified day (i.e. polar days and nights).
+
+### What's with this "delta T" thing?
+
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just about a minute as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (published e.g. by the US Naval Observatory) or at least a solid estimate.
+
+The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html). Here's a plot of its output compared with some published ΔT data:
+
+![deltat](resources/deltat.png)
+
