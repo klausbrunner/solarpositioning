@@ -53,7 +53,7 @@ public final class JulianDate {
 		this.deltaT = deltaT;
 	}
 
-	private GregorianCalendar createUtcCalendar(final GregorianCalendar fromCalendar) {
+	static GregorianCalendar createUtcCalendar(final GregorianCalendar fromCalendar) {
 		final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
 		utcCalendar.setTimeInMillis(fromCalendar.getTimeInMillis());
 		utcCalendar.set(Calendar.ERA, fromCalendar.get(Calendar.ERA));

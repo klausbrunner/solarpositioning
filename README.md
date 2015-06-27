@@ -1,6 +1,6 @@
 # solarpositioning
 
-This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date, latitude, and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, <a href="http://dx.doi.org/10.1016/S0038-092X(00)00156-0">PSA</a> by Blanco-Muriel et al.
+This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date, latitude, and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena or [PSA](http://dx.doi.org/10.1016/S0038-092X(00)00156-0") by Blanco-Muriel et al.
 
 ## Usage
 
@@ -42,11 +42,11 @@ public class App {
 
 ### Which algorithm should I use?
 
-When in doubt, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
+For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110 CE.
 
-If speed is critical (e.g. you need to calculate lots of positions), consider using PSA. Note however that it's highly optimised for its specified time window (1999-2015), and will be drastically less accurate outside of it.
+If you're looking for maximum accuracy or need to calculate for historic dates, consider SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
 
-A fast, yet still accurate alternative would be one of the [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) algorithms, but that's not implemented yet.
+PSA is another fast and simple algorithm, but should not be used for new applications due to its limited time window. It is currently kept for backwards compatibility.
 
 ### Is the code thread-safe?
 
@@ -64,7 +64,7 @@ Note that the times of sunrise and sunset may be NULL if the sun never sets or r
 
 ### What's with this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just about a minute as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (published e.g. by the US Naval Observatory) or at least a solid estimate.
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just about a minute as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a solid estimate.
 
 The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html). Here's a plot of its output compared with some published ΔT data:
 
