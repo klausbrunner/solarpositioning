@@ -44,7 +44,7 @@ public class App {
 
 For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110 CE.
 
-If you're looking for maximum accuracy or need to calculate for historic dates, consider SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
+If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
 
 PSA is another fast and simple algorithm, but should not be used for new applications due to its limited time window. It is currently kept for backwards compatibility.
 
