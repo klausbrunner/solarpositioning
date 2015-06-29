@@ -6,12 +6,12 @@ import java.util.TimeZone;
 
 /**
  * Compute sun position for a given date/time and longitude/latitude.
- * <p/>
+ *
  * This is a simple Java port of the "PSA" solar positioning algorithm, as documented in:
- * <p/>
+ *
  * Blanco-Muriel et al.: Computing the Solar Vector. Solar Energy Vol 70 No 5 pp 431-441.
  * http://dx.doi.org/10.1016/S0038-092X(00)00156-0
- * <p/>
+ *
  * According to the paper, "The algorithm allows .. the true solar vector to be determined with an accuracy of 0.5
  * minutes of arc for the period 1999–2015."
  *
@@ -36,7 +36,7 @@ public final class PSA {
      * @param date      Note that it's unclear how well the algorithm performs before the year 1990 or after the year 2015.
      * @param latitude  in degrees (positive east of Greenwich)
      * @param longitude in degrees (positive north of equator)
-     * @return
+     * @return Topocentric solar position (azimuth measured eastward from north)
      */
     public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude, final double longitude) {
         final Calendar utcTime = new GregorianCalendar(TimeZone.getTimeZone("GMT"));

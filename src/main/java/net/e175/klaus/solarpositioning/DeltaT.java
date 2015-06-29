@@ -16,7 +16,7 @@ public final class DeltaT {
      * Estimate Delta T for the given Calendar. This is based on Espenak and Meeus, "Five Millennium Canon of
      * Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141).
      *
-     * @param forDate
+     * @param forDate date and time
      * @return estimated delta T value (seconds)
      */
     public static double estimate(final GregorianCalendar forDate) {

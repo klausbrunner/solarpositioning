@@ -18,7 +18,7 @@ public final class JulianDate {
     /**
      * Construct a Julian date, assuming deltaT to be 0.
      *
-     * @param date
+     * @param date date and time
      */
     public JulianDate(final GregorianCalendar date) {
         GregorianCalendar utcCalendar = createUtcCalendar(date);
@@ -38,7 +38,7 @@ public final class JulianDate {
     /**
      * Construct a Julian date, observing deltaT.
      *
-     * @param date
+     * @param date date and time
      * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *               in seconds. See
      *               <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.

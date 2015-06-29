@@ -8,10 +8,10 @@ import static java.lang.Math.*;
 /**
  * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
  * certain point of the Earth's surface.
- * <p/>
+ *
  * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
  * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
- * <p/>
+ *
  * This is <i>not</i> a port of the C code, but a re-implementation based on the published procedure.
  *
  * @author Klaus Brunner
@@ -24,12 +24,12 @@ public final class Grena3 {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     * <p/>
+     *
      * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
      * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-     * <p/>
+     *
      * The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01 degrees.
-     * <p/>
+     *
      * This method does not perform refraction correction.
      *
      * @param date      Observer's local date and time.
@@ -50,10 +50,10 @@ public final class Grena3 {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     * <p/>
+     *
      * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
      * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-     * <p/>
+     *
      * The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01 degrees.
      *
      * @param date        Observer's local date and time.

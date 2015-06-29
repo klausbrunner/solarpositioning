@@ -9,10 +9,10 @@ import static java.lang.Math.*;
 /**
  * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
  * certain point of the Earth's surface.
- * <p/>
+ *
  * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
  * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
- * <p/>
+ *
  * This is <i>not</i> a port of the C code, but a re-implementation based on the published procedure.
  *
  * @author Klaus Brunner
@@ -29,7 +29,7 @@ public final class SPA {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     * <p/>
+     *
      * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
      * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
      * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
@@ -129,11 +129,11 @@ public final class SPA {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     * <p/>
+     *
      * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
      * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
      * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
-     * <p/>
+     *
      * This method does not perform refraction correction.
      *
      * @param date      Observer's local date and time.
