@@ -3,7 +3,7 @@
 
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.0.7</version>
+    <version>0.0.8-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>solarpositioning</name>
@@ -30,7 +30,7 @@
         <connection>scm:git:git@github.com:KlausBrunner/solarpositioning.git</connection>
         <developerConnection>scm:git:git@github.com:KlausBrunner/solarpositioning.git</developerConnection>
         <url>git@github.com:KlausBrunner/solarpositioning.git</url>
-        <tag>solarpositioning-0.0.7</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <properties>
