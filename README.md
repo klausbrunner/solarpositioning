@@ -10,7 +10,7 @@ This is a Java library for finding topocentric solar coordinates, i.e. the sunâ€
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.0.6</version> <!-- or whatever latest release is -->
+    <version>0.0.7</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
@@ -42,11 +42,9 @@ public class App {
 
 ### Which algorithm should I use?
 
-For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110 CE.
-
-If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
-
-PSA is another fast and simple algorithm, but should not be used for new applications due to its limited time window. It is currently kept for backwards compatibility.
+* For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110 CE.
+* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
+* PSA is another fast and simple algorithm, but should not be used for new applications due to its limited time window. It is currently kept for backwards compatibility.
 
 ### Is the code thread-safe?
 
