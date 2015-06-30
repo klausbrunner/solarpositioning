@@ -112,11 +112,11 @@ public final class Grena3 {
         final double gamma = atan2(sH, cH * sPhi - sDelta * cPhi / cDelta);
 
         // refraction correction (disabled for silly parameter values)
-        final double deltaRe = (pressure < 0.0 || pressure > 3000.0 || t < -273 || t > 273) ?
+        final double deltaRe =
+                (temperature < -273 || temperature > 273 || pressure < 0 || pressure > 3000) ? 0.0 : (
                 ((eP > 0.0) ?
                         (0.08422 * (pressure / 1000)) / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
-                        : 0.0)
-                : 0.0;
+                        : 0.0));
 
         final double z = PI / 2 - eP - deltaRe;
 

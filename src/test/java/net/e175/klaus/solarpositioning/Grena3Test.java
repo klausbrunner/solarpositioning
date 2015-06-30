@@ -23,8 +23,8 @@ public class Grena3Test {
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
                 toDegrees(0.73117), toDegrees(0.21787), 65, 1000, 20);
 
-        assertEquals(toDegrees(1.1338), result.getZenithAngle(), TOLERANCE / 10);
-        assertEquals(toDegrees(-0.059186 + PI) % 360.0, result.getAzimuth(), TOLERANCE / 10);
+        assertEquals(toDegrees(1.13381), result.getZenithAngle(), TOLERANCE / 10);
+        assertEquals(toDegrees(-0.0591845 + PI) % 360.0, result.getAzimuth(), TOLERANCE / 10);
     }
 
     @Test
