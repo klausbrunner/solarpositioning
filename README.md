@@ -10,7 +10,7 @@ This is a Java library for finding topocentric solar coordinates, i.e. the sunâ€
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.0.7</version> <!-- or whatever latest release is -->
+    <version>0.0.8</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
@@ -24,13 +24,11 @@ import net.e175.klaus.solarpositioning.*;
 public class App {
   public static void main(String[] args) {
     final GregorianCalendar dateTime = new GregorianCalendar();
-    final double latitude = 48.21;
-    final double longitude = 16.37;
 
     AzimuthZenithAngle position = SPA.calculateSolarPosition(
                                             dateTime,
-                                            latitude,
-                                            longitude,
+                                            48.21, // latitude (degrees)
+                                            16.37, // longitude (degrees)
                                             190, // elevation (m)
                                             DeltaT.estimate(dateTime), // delta T (s)
                                             1010, // avg. air pressure (hPa)
@@ -50,15 +48,23 @@ public class App {
 
 Yes. None of the classes hold any mutable shared state. As the calculation is obviously CPU-bound, explicit multithreading does make sense whenever a lot of positions need to be calculated.
 
-### How do I get the time of sunrise/sunset?
+### How do I get the time of sunrise or sunset?
 
 The SPA class now includes a method to calculate the times of sunrise, sun transit, and sunset in one fell swoop:
 
 ```java
-GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 68);
+GregorianCalendar[] res = SPA.calculateSunriseTransitSet(
+                                    time, 
+                                    70.978056, // latitude  
+                                    25.974722, // longitude
+                                    68); // delta T
 ```
 
-Note that the times of sunrise and sunset may be NULL if the sun never sets or rises during the specified day (i.e. polar days and nights).
+Notes:
+ 
+ * The times of sunrise and sunset may be null if the sun never sets or rises during the specified day (i.e. polar days and nights).
+ * Calculation is based on the astronomical definition of sunrise and sunset, using a refraction correction of -0.8333Â°.
+ * For various reasons, sunrise and sunset times may differ from those given by other sources. If you feel there's something wrong with the results of this library, please make sure to compare with a reputable source such as the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/) and not one of the many quick-and-dirty algorithms found on the Web.   
 
 ### What's with this "delta T" thing?
 

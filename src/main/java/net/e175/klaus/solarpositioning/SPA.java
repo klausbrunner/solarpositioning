@@ -163,7 +163,8 @@ public final class SPA {
     }
 
     /**
-     * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day.
+     * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The calculation is based
+     * on the astronomical definition of sunrise and sunset, using a refraction correction of -0.8333°.
      *
      * @param day       GregorianCalendar of day for which sunrise/transit/sunset are to be calculated.
      *                  The time of day (hour, minute, second, millisecond) is ignored.
