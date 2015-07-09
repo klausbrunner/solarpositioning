@@ -63,7 +63,7 @@ GregorianCalendar[] res = SPA.calculateSunriseTransitSet(
 Notes:
  
  * The times of sunrise and sunset may be null if the sun never sets or rises during the specified day (i.e. polar days and nights).
- * Calculation is based on the astronomical definition of sunrise and sunset, using a refraction correction of -0.8333°.
+ * Calculation is based on the usual correction of 0.8333° on the zenith angle, i.e. sunrise and sunset are assumed to occur when the center of the solar disc is 50 arc-minutes below the 90° horizon.
  * For various reasons, sunrise and sunset times may differ from those given by other sources. If you feel there's something wrong with the results of this library, please make sure to compare with a reputable source such as the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/) and not one of the many quick-and-dirty algorithms found on the Web.   
 
 ### What's with this "delta T" thing?
