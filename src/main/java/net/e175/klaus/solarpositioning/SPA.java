@@ -307,10 +307,9 @@ public final class SPA {
         dayStart.set(Calendar.SECOND, 0);
         dayStart.set(Calendar.MILLISECOND, 0);
 
-        // use noon to get offset, assuming that any DST changes happen before sunrise and noon
-        // FIXME: find a better solution, as this is potentially buggy
-        dayStart.set(Calendar.HOUR_OF_DAY, 12);
-        final int offset = day.getTimeZone().getOffset(dayStart.getTimeInMillis());
+        // use hour 0 to get offset as it is added to the day start
+        dayStart.set(Calendar.HOUR_OF_DAY, 0);
+        int offset = day.getTimeZone().getOffset(dayStart.getTimeInMillis());
 
         dayStart.set(Calendar.HOUR_OF_DAY, 0);
         final double offsetFraction = (double) offset / MS_PER_DAY;
