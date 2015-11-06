@@ -144,7 +144,7 @@ public class SPATest {
     }
 
     @Test
-    public void testDSTonDay() {
+    public void testDSTonDayBerlin() {
         GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Europe/Berlin"));
         time.set(2016, Calendar.MARCH, 27, 12, 0, 0);
 
@@ -155,6 +155,34 @@ public class SPATest {
         assertEquals("2016-03-27T06:52:19+0200", df.format(res[0].getTime())); // NOAA: 06:52 (no seconds given)
         assertEquals("2016-03-27T13:12:02+0200", df.format(res[1].getTime())); // NOAA: 13:12:01
         assertEquals("2016-03-27T19:32:49+0200", df.format(res[2].getTime())); // NOAA: 19:33 (no seconds given)
+    }
+
+    @Test
+    public void testDSToffDayAuckland() {
+        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Pacific/Auckland"));
+        time.set(2016, Calendar.APRIL, 3, 12, 0, 0);
+
+        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+
+        DateFormat df = getDateFormat(time);
+
+        assertEquals("2016-04-03T06:37:01+1200", df.format(res[0].getTime())); // NOAA: 06:36 (no seconds given)
+        assertEquals("2016-04-03T12:24:19+1200", df.format(res[1].getTime())); // NOAA: same
+        assertEquals("2016-04-03T18:11:55+1200", df.format(res[2].getTime())); // NOAA: 18:12 (no seconds given)
+    }
+
+    @Test
+    public void testDSTonDayAuckland() {
+        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Pacific/Auckland"));
+        time.set(2015, Calendar.SEPTEMBER, 27, 12, 0, 0);
+
+        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+
+        DateFormat df = getDateFormat(time);
+
+        assertEquals("2015-09-27T07:02:43+1300", df.format(res[0].getTime())); // NOAA: 07:04 (no seconds given)
+        assertEquals("2015-09-27T13:12:17+1300", df.format(res[1].getTime())); // NOAA: 13:12:19
+        assertEquals("2015-09-27T19:20:56+1300", df.format(res[2].getTime())); // NOAA: 19:21 (no seconds given)
     }
 
 }
