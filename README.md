@@ -12,7 +12,7 @@ This is a Java library for finding topocentric solar coordinates, i.e. the sunâ€
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.0.8</version> <!-- or whatever latest release is -->
+    <version>0.0.9</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
