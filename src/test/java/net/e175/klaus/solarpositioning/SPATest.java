@@ -130,7 +130,7 @@ public class SPATest {
     }
 
     @Test
-    public void testDSToffDay() {
+    public void testDSToffDayBerlin() {
         GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Europe/Berlin"));
         time.set(2015, Calendar.OCTOBER, 25, 12, 0, 0);
 
