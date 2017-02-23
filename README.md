@@ -67,6 +67,7 @@ Notes:
  * The times of sunrise and sunset may be null if the sun never sets or rises during the specified day (i.e. polar days and nights).
  * Calculation is based on the usual correction of 0.8333° on the zenith angle, i.e. sunrise and sunset are assumed to occur when the center of the solar disc is 50 arc-minutes below the 90° horizon.
  * For various reasons, sunrise and sunset times may differ from those given by other sources. If you feel there's something wrong with the results of this library, please make sure to compare with a reputable source such as the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/) and not one of the many quick-and-dirty algorithms found on the Web.   
+ * As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther observer's position from the equator, i.e. values for polar regions are much less reliable.
 
 ### What's with this "delta T" thing?
 
