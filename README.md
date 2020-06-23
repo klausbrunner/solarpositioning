@@ -1,4 +1,5 @@
 # solarpositioning
+![CI](https://github.com/KlausBrunner/solarpositioning/workflows/Java%20CI%20with%20Maven/badge.svg)
 
 This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date, latitude, and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena or [PSA](http://dx.doi.org/10.1016/S0038-092X(00)00156-0) by Blanco-Muriel et al.
 
