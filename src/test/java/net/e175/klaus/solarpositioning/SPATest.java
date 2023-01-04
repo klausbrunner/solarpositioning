@@ -10,6 +10,7 @@ import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 public class SPATest {
@@ -127,6 +128,20 @@ public class SPATest {
 
         assertEquals("2015-06-17T07:32:45+1200", df.format(res[0].getTime()));
         assertEquals("2015-06-17T17:11:04+1200", df.format(res[2].getTime()));
+    }
+
+    @Test
+    public void testResoluteSunriseTransitSet() {
+        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+        time.set(2016, Calendar.NOVEMBER, 1, 0, 0, 0);
+
+        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 74.6973, -94.8297, 0);
+
+        DateFormat df = getDateFormat(time);
+
+        assertNotNull(res[0]);
+        assertEquals("2016-11-01T16:20:30+0000", df.format(res[0].getTime()));
+        assertEquals("2016-11-01T19:43:37+0000", df.format(res[2].getTime()));
     }
 
     @Test
