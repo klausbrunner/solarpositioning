@@ -2,26 +2,22 @@ package net.e175.klaus.solarpositioning;
 
 import org.junit.Test;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.SimpleTimeZone;
-import java.util.TimeZone;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class SPATest {
 
     private static final double TOLERANCE = 0.0001;
-    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
+
+    private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx");
 
     @Test
     public void testSpaExample() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
-        time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30 LST-07:00
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, 820, 11);
 
@@ -31,8 +27,7 @@ public class SPATest {
 
     @Test
     public void testNearEquator1() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-4 * 60 * 60 * 1000, "AMT"));
-        time.set(2015, Calendar.JUNE, 12, 9, 34, 11);
+        ZonedDateTime time = ZonedDateTime.of(2015, 6, 12, 9, 34, 11, 0, ZoneOffset.ofHours(-4));
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, -3.107, -60.025, 100, 69, 1000, 20);
 
@@ -42,8 +37,7 @@ public class SPATest {
 
     @Test
     public void testSouthernSolstice() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-        time.set(2012, Calendar.DECEMBER, 22, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2012, 12, 22, 12, 0, 0, 0, ZoneOffset.UTC);
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, -41, 0, 100, 0, 1000, 20);
 
@@ -58,8 +52,7 @@ public class SPATest {
 
     @Test
     public void testSillyRefractionParameters() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
-        time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30 LST-07:00
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, -2, 1000);
         assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
@@ -72,132 +65,140 @@ public class SPATest {
 
     @Test
     public void testSpaExampleSunriseTransitSet() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
-        time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30 LST-07:00
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2003-10-17T06:12:43-0700", df.format(res[0].getTime()));
-        assertEquals("2003-10-17T11:46:04-0700", df.format(res[1].getTime()));
-        assertEquals("2003-10-17T17:20:19-0700", df.format(res[2].getTime()));
-    }
-
-    private DateFormat getDateFormat(GregorianCalendar time) {
-        DateFormat df = new SimpleDateFormat(DATE_FORMAT);
-        df.setTimeZone(time.getTimeZone());
-        return df;
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2003-10-17T06:12:43-07:00", DF.format(res.getSunrise()));
+        assertEquals("2003-10-17T11:46:04-07:00", DF.format(res.getTransit()));
+        assertEquals("2003-10-17T17:18:51-07:00", DF.format(res.getSunset())); // SPA paper: 17:20:19, NOAA calc: 17:19
     }
 
     @Test
     public void testOtherSpaExampleSunriseTransitSet() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        time.set(2004, Calendar.DECEMBER, 4, 12, 30, 30);
+        ZonedDateTime time = ZonedDateTime.of(2004, 12, 4, 12, 30, 30, 0, ZoneOffset.UTC);
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -35.0, 0, 0);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -35.0, 0, 0);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2004-12-04T04:38:56+0000", df.format(res[0].getTime()));
-        assertEquals("2004-12-04T19:02:02+0000", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2004-12-04T04:38:56+00:00", DF.format(res.getSunrise()));
+        assertEquals("2004-12-04T19:02:02+00:00", DF.format(res.getSunset())); // SPA paper has 19:02:02.5
     }
 
     @Test
     public void testNoSunset() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(2 * 60 * 60 * 1000, "CEST"));
-        time.set(2015, Calendar.JUNE, 17, 12, 30, 30);
+        ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 68);
+        // location is Honningsvåg, Norway (near North Cape)
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
 
-        DateFormat df = getDateFormat(time);
-
-        assertNull(res[0]);
-        assertEquals("2015-06-17T12:16:55+0200", df.format(res[1].getTime())); // NOAA calc says 12:16:50
-        assertNull(res[2]);
+        assertEquals(SunriseTransitSet.Type.ALL_DAY, res.getType());
+        assertNull(res.getSunrise());
+        assertEquals("2015-06-17T12:16:55+02:00", DF.format(res.getTransit())); // NOAA calc says 12:16:50
+        assertNull(res.getSunset());
     }
 
     @Test
     public void testNZSunriseTransitSet() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(12 * 60 * 60 * 1000, "NZST"));
-        time.set(2015, Calendar.JUNE, 17, 12, 30, 30);
+        ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(12));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2015-06-17T07:32:46+1200", df.format(res[0].getTime()));
-        assertEquals("2015-06-17T17:11:03+1200", df.format(res[2].getTime()));
-    }
-
-    @Test
-    public void testResoluteSunriseTransitSet() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        time.set(2016, Calendar.NOVEMBER, 1, 0, 0, 0);
-
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 74.6973, -94.8297, 0);
-
-        DateFormat df = getDateFormat(time);
-
-        assertNotNull(res[0]);
-        assertEquals("2016-11-01T16:20:30+0000", df.format(res[0].getTime()));
-        assertEquals("2016-11-01T19:43:37+0000", df.format(res[2].getTime()));
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2015-06-17T07:32:26+12:00", DF.format(res.getSunrise())); // NOAA: 7:32 (no seconds given)
+        assertEquals("2015-06-17T12:21:46+12:00", DF.format(res.getTransit())); // NOAA: 12:21:41
+        assertEquals("2015-06-17T17:11:03+12:00", DF.format(res.getSunset())); // NOAA: 17:11 (no seconds given)
     }
 
     @Test
     public void testDSToffDayBerlin() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Europe/Berlin"));
-        time.set(2015, Calendar.OCTOBER, 25, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2015, 10, 25, 12, 0, 0, 0,
+                ZoneId.of("Europe/Berlin"));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2015-10-25T06:49:02+0100", df.format(res[0].getTime())); // NOAA: same (no seconds given)
-        assertEquals("2015-10-25T11:50:55+0100", df.format(res[1].getTime())); // NOAA: 11:50:53
-        assertEquals("2015-10-25T16:51:59+0100", df.format(res[2].getTime())); // NOAA: 16:52 (no seconds given)
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2015-10-25T06:49:02+01:00", DF.format(res.getSunrise())); // NOAA: same (no seconds given)
+        assertEquals("2015-10-25T11:50:55+01:00", DF.format(res.getTransit())); // NOAA: 11:50:53
+        assertEquals("2015-10-25T16:51:59+01:00", DF.format(res.getSunset())); // NOAA: 16:52 (no seconds given)
     }
 
     @Test
     public void testDSTonDayBerlin() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Europe/Berlin"));
-        time.set(2016, Calendar.MARCH, 27, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2016, 3, 27, 12, 0, 0, 0,
+                ZoneId.of("Europe/Berlin"));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2016-03-27T06:52:19+0200", df.format(res[0].getTime())); // NOAA: 06:52 (no seconds given)
-        assertEquals("2016-03-27T13:12:02+0200", df.format(res[1].getTime())); // NOAA: 13:12:01
-        assertEquals("2016-03-27T19:32:49+0200", df.format(res[2].getTime())); // NOAA: 19:33 (no seconds given)
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2016-03-27T06:52:19+02:00", DF.format(res.getSunrise())); // NOAA: 06:52 (no seconds given)
+        assertEquals("2016-03-27T13:12:02+02:00", DF.format(res.getTransit())); // NOAA: 13:12:01
+        assertEquals("2016-03-27T19:32:49+02:00", DF.format(res.getSunset())); // NOAA: 19:33 (no seconds given)
     }
 
     @Test
     public void testDSToffDayAuckland() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Pacific/Auckland"));
-        time.set(2016, Calendar.APRIL, 3, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2016, 4, 3, 12, 0, 0, 0,
+                ZoneId.of("Pacific/Auckland"));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
 
-        DateFormat df = getDateFormat(time);
-
-        assertEquals("2016-04-03T06:37:01+1200", df.format(res[0].getTime())); // NOAA: 06:36 (no seconds given)
-        assertEquals("2016-04-03T12:24:19+1200", df.format(res[1].getTime())); // NOAA: same
-        assertEquals("2016-04-03T18:11:55+1200", df.format(res[2].getTime())); // NOAA: 18:12 (no seconds given)
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2016-04-03T06:36:09+12:00", DF.format(res.getSunrise())); // NOAA: 06:36 (no seconds given)
+        assertEquals("2016-04-03T12:24:19+12:00", DF.format(res.getTransit())); // NOAA: same
+        assertEquals("2016-04-03T18:11:55+12:00", DF.format(res.getSunset())); // NOAA: 18:12 (no seconds given)
     }
 
     @Test
     public void testDSTonDayAuckland() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("Pacific/Auckland"));
-        time.set(2015, Calendar.SEPTEMBER, 27, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2015, 9, 27, 12, 0, 0, 0,
+                ZoneId.of("Pacific/Auckland"));
 
-        GregorianCalendar[] res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
 
-        DateFormat df = getDateFormat(time);
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2015-09-27T07:04:14+13:00", DF.format(res.getSunrise())); // NOAA: 07:04 (no seconds given)
+        assertEquals("2015-09-27T13:12:17+13:00", DF.format(res.getTransit())); // NOAA: 13:12:19
+        assertEquals("2015-09-27T19:20:56+13:00", DF.format(res.getSunset())); // NOAA: 19:21 (no seconds given)
+    }
 
-        assertEquals("2015-09-27T07:02:43+1300", df.format(res[0].getTime())); // NOAA: 07:04 (no seconds given)
-        assertEquals("2015-09-27T13:12:17+1300", df.format(res[1].getTime())); // NOAA: 13:12:19
-        assertEquals("2015-09-27T19:20:56+1300", df.format(res[2].getTime())); // NOAA: 19:21 (no seconds given)
+    private SunriseTransitSet lybRun(int year, int month, int day) {
+        ZonedDateTime time = ZonedDateTime.of(year, month, day, 0, 0, 0, 0,
+                ZoneOffset.UTC);
+        return SPA.calculateSunriseTransitSet(time, 78.2222, 15.6316, 0);
+    }
+
+    @Test
+    public void testLongyearbyen() {
+        SunriseTransitSet res;
+
+        res = lybRun(2015, 1, 20);
+        // USNO for comparison: https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-01-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
+        assertEquals(SunriseTransitSet.Type.ALL_NIGHT, res.getType());
+        assertNull(res.getSunrise());
+        assertNull(res.getSunset());
+
+        res = lybRun(2015, 2, 20);
+        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-02-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2015-02-20T09:07:12+00:00", DF.format(res.getSunrise())); // USNO: 09:07, timeanddate.com: no sunrise
+        assertEquals("2015-02-20T11:11:12+00:00", DF.format(res.getTransit())); // USNO: 11:11
+        assertEquals("2015-02-20T13:17:33+00:00", DF.format(res.getSunset())); // USNO: 13:17, timeanddate.com: no sunset
+
+        res = lybRun(2015, 3, 20);
+        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-03-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
+        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
+        assertEquals("2015-03-20T04:54:24+00:00", DF.format(res.getSunrise())); // USNO: 04:54
+        assertEquals("2015-03-20T11:05:01+00:00", DF.format(res.getTransit())); // USNO: 11:05
+        assertEquals("2015-03-20T17:19:32+00:00", DF.format(res.getSunset())); // USNO: 17:20
+
+        res = lybRun(2015, 6, 20);
+        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-06-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
+        assertEquals(SunriseTransitSet.Type.ALL_DAY, res.getType());
+        assertNull(res.getSunrise());
+        assertEquals("2015-06-20T10:58:57+00:00", DF.format(res.getTransit())); // USNO: 10:59
+        assertNull(res.getSunset());
     }
 
 }

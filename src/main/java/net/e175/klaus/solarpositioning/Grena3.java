@@ -1,17 +1,16 @@
 package net.e175.klaus.solarpositioning;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.time.ZonedDateTime;
 
 import static java.lang.Math.*;
 
 /**
  * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
  * certain point of the Earth's surface.
- *
+ * <p>
  * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
  * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
- *
+ * <p>
  * This is <i>not</i> a port of the C code, but a re-implementation based on the published procedure.
  *
  * @author Klaus Brunner
@@ -24,12 +23,12 @@ public final class Grena3 {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     *
+     * <p>
      * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
      * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-     *
+     * <p>
      * The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01 degrees.
-     *
+     * <p>
      * This method does not perform refraction correction.
      *
      * @param date      Observer's local date and time.
@@ -42,7 +41,7 @@ public final class Grena3 {
      * @return Topocentric solar position (azimuth measured eastward from north)
      * @see AzimuthZenithAngle
      */
-    public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
+    public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double deltaT) {
         return calculateSolarPosition(date, latitude, longitude, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
     }
@@ -50,10 +49,10 @@ public final class Grena3 {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     *
+     * <p>
      * This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation of sun position
      * from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-     *
+     * <p>
      * The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01 degrees.
      *
      * @param date        Observer's local date and time.
@@ -69,7 +68,7 @@ public final class Grena3 {
      * @return Topocentric solar position (azimuth measured eastward from north)
      * @see AzimuthZenithAngle
      */
-    public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
+    public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double deltaT, final double pressure,
                                                             final double temperature) {
         final double t = calcT(date);
@@ -114,24 +113,24 @@ public final class Grena3 {
         // refraction correction (disabled for silly parameter values)
         final double deltaRe =
                 (temperature < -273 || temperature > 273 || pressure < 0 || pressure > 3000) ? 0.0 : (
-                ((eP > 0.0) ?
-                        (0.08422 * (pressure / 1000)) / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
-                        : 0.0));
+                        ((eP > 0.0) ?
+                                (0.08422 * (pressure / 1000)) / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
+                                : 0.0));
 
         final double z = PI / 2 - eP - deltaRe;
 
         return new AzimuthZenithAngle(toDegrees(gamma + PI) % 360.0, toDegrees(z));
     }
 
-    private static double calcT(GregorianCalendar date) {
-        GregorianCalendar utc = JulianDate.createUtcCalendar(date);
+    private static double calcT(ZonedDateTime date) {
+        ZonedDateTime utc = JulianDate.createUtcCalendar(date);
 
-        int m = utc.get(Calendar.MONTH) + 1;
-        int y = utc.get(Calendar.YEAR);
-        final int d = utc.get(Calendar.DAY_OF_MONTH);
-        final double h = utc.get(Calendar.HOUR_OF_DAY) +
-                utc.get(Calendar.MINUTE) / 60d +
-                utc.get(Calendar.SECOND) / (60d * 60);
+        int m = utc.getMonthValue();
+        int y = utc.getYear();
+        final int d = utc.getDayOfMonth();
+        final double h = utc.getHour() +
+                utc.getMinute() / 60d +
+                utc.getSecond() / (60d * 60);
 
         if (m <= 2) {
             m += 12;

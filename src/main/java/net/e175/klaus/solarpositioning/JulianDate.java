@@ -1,8 +1,7 @@
 package net.e175.klaus.solarpositioning;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 /**
  * Calculate Julian date for a given point in time. This follows the algorithm described in Reda, I.; Andreas, A.
@@ -20,8 +19,8 @@ public final class JulianDate {
      *
      * @param date date and time
      */
-    public JulianDate(final GregorianCalendar date) {
-        GregorianCalendar utcCalendar = createUtcCalendar(date);
+    public JulianDate(final ZonedDateTime date) {
+        ZonedDateTime utcCalendar = createUtcCalendar(date);
         this.julianDate = calcJulianDate(utcCalendar);
         this.deltaT = 0.0;
     }
@@ -38,37 +37,33 @@ public final class JulianDate {
     /**
      * Construct a Julian date, observing deltaT.
      *
-     * @param date date and time
+     * @param date   date and time
      * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *               in seconds. See
      *               <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
      *               For the year 2015, a reasonably accurate default would be 68.
      */
-    public JulianDate(final GregorianCalendar date, final double deltaT) {
-        GregorianCalendar calendar = createUtcCalendar(date);
+    public JulianDate(final ZonedDateTime date, final double deltaT) {
+        ZonedDateTime calendar = createUtcCalendar(date);
         this.julianDate = calcJulianDate(calendar);
         this.deltaT = deltaT;
     }
 
-    static GregorianCalendar createUtcCalendar(final GregorianCalendar fromCalendar) {
-        final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        utcCalendar.setTimeInMillis(fromCalendar.getTimeInMillis());
-        utcCalendar.set(Calendar.ERA, fromCalendar.get(Calendar.ERA));
-        return utcCalendar;
+    static ZonedDateTime createUtcCalendar(final ZonedDateTime fromCalendar) {
+        return fromCalendar.withZoneSameInstant(ZoneOffset.UTC);
     }
 
-    private double calcJulianDate(GregorianCalendar calendar) {
-        int y = (calendar.get(Calendar.ERA) == GregorianCalendar.AD) ? calendar.get(Calendar.YEAR) : -calendar
-                .get(Calendar.YEAR);
-        int m = calendar.get(Calendar.MONTH) + 1;
+    private double calcJulianDate(ZonedDateTime calendar) {
+        int y = calendar.getYear();
+        int m = calendar.getMonthValue();
 
         if (m < 3) {
             y = y - 1;
             m = m + 12;
         }
 
-        final double d = calendar.get(Calendar.DAY_OF_MONTH)
-                + (calendar.get(Calendar.HOUR_OF_DAY) + (calendar.get(Calendar.MINUTE) + calendar.get(Calendar.SECOND) / 60.0) / 60.0)
+        final double d = calendar.getDayOfMonth()
+                + (calendar.getHour() + (calendar.getMinute() + calendar.getSecond() / 60.0) / 60.0)
                 / 24.0;
         final double jd = Math.floor(365.25 * (y + 4716.0)) + Math.floor(30.6001 * (m + 1)) + d - 1524.5;
         final double a = Math.floor(y / 100.0);

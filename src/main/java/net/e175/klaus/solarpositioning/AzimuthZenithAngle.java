@@ -1,9 +1,9 @@
 package net.e175.klaus.solarpositioning;
 
 /**
- * A simple wrapper class for keeping an azimuth/zenith angle pair of values.
+ * A simple data class for keeping an azimuth/zenith angle pair of values.
  */
-public class AzimuthZenithAngle {
+public final class AzimuthZenithAngle {
     private final double azimuth;
     private final double zenithAngle;
 
@@ -12,17 +12,19 @@ public class AzimuthZenithAngle {
         this.azimuth = azimuth;
     }
 
-    public final double getZenithAngle() {
+    public double getZenithAngle() {
         return zenithAngle;
     }
 
-    public final double getAzimuth() {
+    public double getAzimuth() {
         return azimuth;
     }
 
     @Override
     public String toString() {
-        return String.format("azimuth %.6f°, zenith angle %.6f°", azimuth, zenithAngle);
+        return "AzimuthZenithAngle{" +
+                String.format("azimuth=%.6f°", azimuth) +
+                String.format(", zenithAngle=%.6f°", zenithAngle) +
+                '}';
     }
-
 }

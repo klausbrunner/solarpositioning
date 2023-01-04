@@ -1,25 +1,24 @@
 package net.e175.klaus.solarpositioning;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 
 import static java.lang.Math.*;
 
 /**
  * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
  * certain point of the Earth's surface.
- *
+ * <p>
  * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
  * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
- *
+ * <p>
  * This is <i>not</i> a port of the C code, but a re-implementation based on the published procedure.
  *
  * @author Klaus Brunner
  */
 public final class SPA {
 
-    private static final double HPRIME_0 = -0.8333;
+    private static final double HPRIME_0 = -0.83337;
     private static final double SIN_HPRIME_0 = sin(toRadians(HPRIME_0));
     private static final int MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -29,7 +28,7 @@ public final class SPA {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     *
+     * <p>
      * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
      * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
      * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
@@ -48,7 +47,7 @@ public final class SPA {
      * @return Topocentric solar position (azimuth measured eastward from north)
      * @see AzimuthZenithAngle
      */
-    public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
+    public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double elevation, final double deltaT, final double pressure,
                                                             final double temperature) {
 
@@ -76,7 +75,7 @@ public final class SPA {
         final double beta = toRadians(betaDegrees);
 
         // calculate nutation
-        final double xTerms[] = calculateNutationTerms(jce);
+        final double[] xTerms = calculateNutationTerms(jce);
         final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
         final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
         final double deltaPsi = calculateDeltaPsiEpsilon(deltaPsiI);
@@ -129,11 +128,11 @@ public final class SPA {
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
-     *
+     * <p>
      * This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position Algorithm for Solar
      * Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008. The algorithm is supposed to work for
      * the years -2000 to 6000, with uncertainties of +/-0.0003 degrees.
-     *
+     * <p>
      * This method does not perform refraction correction.
      *
      * @param date      Observer's local date and time.
@@ -147,7 +146,7 @@ public final class SPA {
      * @return Topocentric solar position (azimuth measured eastward from north)
      * @see AzimuthZenithAngle
      */
-    public static AzimuthZenithAngle calculateSolarPosition(final GregorianCalendar date, final double latitude,
+    public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double elevation, final double deltaT) {
         return calculateSolarPosition(date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
     }
@@ -174,22 +173,19 @@ public final class SPA {
      *                  in seconds. See
      *                  <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
      *                  For the year 2015, a reasonably accurate default would be 68.
-     * @return An array of 3 GregorianCalendar values corresponding to the time of sunrise, sun transit, and sunset,
-     * respectively. Note that the values for sunrise and sunset may be null: in this case, the sun stays above or
-     * below the horizon all day.
      */
-    public static GregorianCalendar[] calculateSunriseTransitSet(final GregorianCalendar day,
-                                                                 final double latitude,
-                                                                 final double longitude,
-                                                                 final double deltaT) {
-        final GregorianCalendar dayStart = startOfDayUT(day);
+    public static SunriseTransitSet calculateSunriseTransitSet(final ZonedDateTime day,
+                                                               final double latitude,
+                                                               final double longitude,
+                                                               final double deltaT) {
+        final ZonedDateTime dayStart = startOfDayUT(day);
         final JulianDate jd = new JulianDate(dayStart, 0);
 
         final double phi = toRadians(latitude);
 
         // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
         final double jce = jd.getJulianEphemerisCentury();
-        final double xTerms[] = calculateNutationTerms(jce);
+        final double[] xTerms = calculateNutationTerms(jce);
         final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
         final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
         final double deltaPsi = calculateDeltaPsiEpsilon(deltaPsiI);
@@ -215,7 +211,8 @@ public final class SPA {
         final double acosArg = (SIN_HPRIME_0 - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
                 / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
-        final boolean noSunriseOrSet = (acosArg < -1.0) || (acosArg > 1.0);
+        final SunriseTransitSet.Type type = acosArg < -1.0 ? SunriseTransitSet.Type.ALL_DAY :
+                (acosArg > 1.0 ? SunriseTransitSet.Type.ALL_NIGHT : SunriseTransitSet.Type.NORMAL);
 
         final double h0 = acos(acosArg);
 
@@ -294,28 +291,16 @@ public final class SPA {
                 (h[2] - HPRIME_0) /
                         (360.0 * cos(toRadians(alphaDeltaPrimes[2].delta)) * cos(phi) * sin(toRadians(hPrime[2])));
 
-        return new GregorianCalendar[]{
-                noSunriseOrSet ? null : addFractionOfDay(day, r),
+
+        return new SunriseTransitSet(type,
+                type == SunriseTransitSet.Type.NORMAL ? addFractionOfDay(day, r) : null,
                 addFractionOfDay(day, t),
-                noSunriseOrSet ? null : addFractionOfDay(day, s)
-        };
+                type == SunriseTransitSet.Type.NORMAL ? addFractionOfDay(day, s) : null);
     }
 
-    private static GregorianCalendar addFractionOfDay(GregorianCalendar day, final double fraction) {
-        GregorianCalendar dayStart = (GregorianCalendar) day.clone();
-        dayStart.set(Calendar.MINUTE, 0);
-        dayStart.set(Calendar.SECOND, 0);
-        dayStart.set(Calendar.MILLISECOND, 0);
-        dayStart.set(Calendar.HOUR_OF_DAY, 0);
-        final int offset = day.getTimeZone().getOffset(dayStart.getTimeInMillis());
-
-        dayStart.set(Calendar.HOUR_OF_DAY, 0);
-        final double offsetFraction = (double) offset / MS_PER_DAY;
-        final int addMs = (int) (MS_PER_DAY * limitTo(fraction + offsetFraction, 1.0));
-        assert addMs >= 0 && addMs <= MS_PER_DAY;
-        dayStart.setTimeInMillis(dayStart.getTimeInMillis() + addMs);
-
-        return dayStart;
+    private static ZonedDateTime addFractionOfDay(ZonedDateTime day, double fraction) {
+        final int millisPlus = (int) (MS_PER_DAY * fraction);
+        return day.truncatedTo(ChronoUnit.DAYS).plus(millisPlus, ChronoUnit.MILLIS);
     }
 
     /**
@@ -377,17 +362,8 @@ public final class SPA {
         return new AlphaDelta(alphaDegrees, deltaDegrees);
     }
 
-    private static GregorianCalendar startOfDayUT(GregorianCalendar day) {
-        final GregorianCalendar utcCalendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-
-        utcCalendar.set(day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH));
-        utcCalendar.set(Calendar.ERA, day.get(Calendar.ERA));
-        utcCalendar.set(Calendar.HOUR_OF_DAY, 0);
-        utcCalendar.set(Calendar.MINUTE, 0);
-        utcCalendar.set(Calendar.SECOND, 0);
-        utcCalendar.set(Calendar.MILLISECOND, 0);
-
-        return utcCalendar;
+    private static ZonedDateTime startOfDayUT(ZonedDateTime day) {
+        return day.truncatedTo(ChronoUnit.DAYS);
     }
 
     private static AzimuthZenithAngle calculateTopocentricSolarPosition(final double p, final double t, final double phi,

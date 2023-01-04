@@ -2,10 +2,8 @@ package net.e175.klaus.solarpositioning;
 
 import org.junit.Test;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.SimpleTimeZone;
-import java.util.TimeZone;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.toDegrees;
@@ -17,8 +15,7 @@ public class Grena3Test {
 
     @Test
     public void cSampleComparison() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(+1 * 60 * 60 * 1000, "CET"));
-        time.set(2012, Calendar.JANUARY, 1, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2012, 1, 1, 12, 0, 0, 0, ZoneOffset.ofHours(1));
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
                 toDegrees(0.73117), toDegrees(0.21787), 65, 1000, 20);
@@ -29,8 +26,7 @@ public class Grena3Test {
 
     @Test
     public void spaComparison() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        time.set(2015, Calendar.JUNE, 28, 17, 45, 12);
+        ZonedDateTime time = ZonedDateTime.of(2015, 6, 28, 17, 45, 12, 0, ZoneOffset.UTC);
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
                 52.509663, 13.376481, 68, 1000, 20);
@@ -41,8 +37,7 @@ public class Grena3Test {
 
     @Test
     public void testNearEquator1() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-4 * 60 * 60 * 1000, "AMT"));
-        time.set(2015, Calendar.JUNE, 12, 9, 34, 11);
+        ZonedDateTime time = ZonedDateTime.of(2015, 6, 12, 9, 34, 11, 0, ZoneOffset.ofHours(-4));
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time, -3.107, -60.025, 69, 1000, 20);
 
@@ -52,8 +47,7 @@ public class Grena3Test {
 
     @Test
     public void testSouthernSolstice() {
-        GregorianCalendar time = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-        time.set(2012, Calendar.DECEMBER, 22, 12, 0, 0);
+        ZonedDateTime time = ZonedDateTime.of(2012, 12, 22, 12, 0, 0, 0, ZoneOffset.UTC);
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time, -41, 0, 0, 1000, 20);
 
@@ -68,8 +62,7 @@ public class Grena3Test {
 
     @Test
     public void testSillyRefractionParameters() {
-        GregorianCalendar time = new GregorianCalendar(new SimpleTimeZone(-7 * 60 * 60 * 1000, "LST"));
-        time.set(2003, Calendar.OCTOBER, 17, 12, 30, 30); // 17 October 2003, 12:30:30 LST-07:00
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time, 39.742476, -105.1786, 67, -2, 1000);
         assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
