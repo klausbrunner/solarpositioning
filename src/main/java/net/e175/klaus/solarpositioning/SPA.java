@@ -212,7 +212,7 @@ public final class SPA {
         m[0] = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360;
 
         // A.2.4. Calculate the local hour angle H0 corresponding to ...
-        final double acosArg = (SIN_HPRIME_0 - sin(phi * sin(toRadians(alphaDeltas[1].delta))))
+        final double acosArg = (SIN_HPRIME_0 - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
                 / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
         final boolean noSunriseOrSet = (acosArg < -1.0) || (acosArg > 1.0);

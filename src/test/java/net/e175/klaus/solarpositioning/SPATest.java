@@ -99,8 +99,8 @@ public class SPATest {
 
         DateFormat df = getDateFormat(time);
 
-        assertEquals("2004-12-04T04:38:57+0000", df.format(res[0].getTime()));
-        assertEquals("2004-12-04T19:02:01+0000", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
+        assertEquals("2004-12-04T04:38:56+0000", df.format(res[0].getTime()));
+        assertEquals("2004-12-04T19:02:02+0000", df.format(res[2].getTime())); // SPA paper has 19:02:02.5
     }
 
     @Test
@@ -126,8 +126,8 @@ public class SPATest {
 
         DateFormat df = getDateFormat(time);
 
-        assertEquals("2015-06-17T07:32:45+1200", df.format(res[0].getTime()));
-        assertEquals("2015-06-17T17:11:04+1200", df.format(res[2].getTime()));
+        assertEquals("2015-06-17T07:32:46+1200", df.format(res[0].getTime()));
+        assertEquals("2015-06-17T17:11:03+1200", df.format(res[2].getTime()));
     }
 
     @Test
@@ -153,9 +153,9 @@ public class SPATest {
 
         DateFormat df = getDateFormat(time);
 
-        assertEquals("2015-10-25T06:49:00+0100", df.format(res[0].getTime())); // NOAA: same (no seconds given)
+        assertEquals("2015-10-25T06:49:02+0100", df.format(res[0].getTime())); // NOAA: same (no seconds given)
         assertEquals("2015-10-25T11:50:55+0100", df.format(res[1].getTime())); // NOAA: 11:50:53
-        assertEquals("2015-10-25T16:52:02+0100", df.format(res[2].getTime())); // NOAA: 16:52 (no seconds given)
+        assertEquals("2015-10-25T16:51:59+0100", df.format(res[2].getTime())); // NOAA: 16:52 (no seconds given)
     }
 
     @Test
