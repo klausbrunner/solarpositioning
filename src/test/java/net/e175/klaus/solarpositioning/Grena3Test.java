@@ -15,7 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Grena3Test {
 
     private static final double TOLERANCE = 0.01; // advertised max error vis-a-vis SPA
-
+    private static final ZonedDateTime GRENA_VALIDITY_START = ZonedDateTime.of(2010, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static final ZonedDateTime GRENA_VALIDITY_END = ZonedDateTime.of(2110, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC);
     @Test
     public void cSampleComparison() {
         ZonedDateTime time = ZonedDateTime.of(2012, 1, 1, 12, 0, 0, 0, ZoneOffset.ofHours(1));
@@ -23,8 +24,8 @@ public class Grena3Test {
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
                 toDegrees(0.73117), toDegrees(0.21787), 65, 1000, 20);
 
-        assertEquals(toDegrees(1.13381), result.getZenithAngle(), TOLERANCE / 10);
-        assertEquals(toDegrees(-0.0591845 + PI) % 360.0, result.getAzimuth(), TOLERANCE / 10);
+        assertEquals(toDegrees(1.13381), result.getZenithAngle(), TOLERANCE / 100);
+        assertEquals(toDegrees(-0.0591845 + PI) % 360.0, result.getAzimuth(), TOLERANCE / 100);
     }
 
     @Test
@@ -71,17 +72,15 @@ public class Grena3Test {
         assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
         assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
 
-        result = Grena3.calculateSolarPosition(time, 39.742476, -105.1786, 67);
-        assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
-        assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
+        AzimuthZenithAngle result2 = Grena3.calculateSolarPosition(time, 39.742476, -105.1786, 67);
+        assertEquals(result, result2);
     }
 
     @ParameterizedTest
     @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
     public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
-        Assumptions.assumeTrue(
-                dateTime.isAfter(ZonedDateTime.of(2010, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
-                        && dateTime.isBefore(ZonedDateTime.of(2110, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC)));
+        Assumptions.assumeTrue(dateTime.isAfter(GRENA_VALIDITY_START)
+                        && dateTime.isBefore(GRENA_VALIDITY_END), "date out of validity range, skipping");
 
         AzimuthZenithAngle res = Grena3.calculateSolarPosition(dateTime, lat, lon, 0, 1000, 10);
 

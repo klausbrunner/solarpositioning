@@ -207,7 +207,7 @@ public class SPATest {
         if (sunrise.startsWith("-999")) {
             assertNull(res.getSunrise());
             assertNull(res.getSunset());
-            assertNotEquals(res.getType(), SunriseTransitSet.Type.NORMAL);
+            assertNotEquals(SunriseTransitSet.Type.NORMAL, res.getType());
         } else {
             compare(sunrise, res.getSunrise());
             compare(transit, res.getTransit());
