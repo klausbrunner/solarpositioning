@@ -13,7 +13,7 @@ public class DeltaTTest {
     }
 
     @Test
-    public void historicalValues() {
+    public void testHistoricalValues() {
         assertEquals(17190, DeltaT.estimate(yearCal(-400)), 2000); // not sure why so far off, polynomial seems ok
 
         assertEquals(14080, DeltaT.estimate(yearCal(-300)), 5);
@@ -36,7 +36,7 @@ public class DeltaTTest {
     }
 
     @Test
-    public void observedValues() {
+    public void testObservedValues() {
         assertEquals(31.1, DeltaT.estimate(yearCal(1955)), 1);
 
         assertEquals(45.5, DeltaT.estimate(yearCal(1975)), 1);

@@ -18,7 +18,7 @@ public class Grena3Test {
     private static final ZonedDateTime GRENA_VALIDITY_START = ZonedDateTime.of(2010, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     private static final ZonedDateTime GRENA_VALIDITY_END = ZonedDateTime.of(2110, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC);
     @Test
-    public void cSampleComparison() {
+    public void testCSampleComparison() {
         ZonedDateTime time = ZonedDateTime.of(2012, 1, 1, 12, 0, 0, 0, ZoneOffset.ofHours(1));
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
@@ -29,7 +29,7 @@ public class Grena3Test {
     }
 
     @Test
-    public void spaComparison() {
+    public void testSpaComparison() {
         ZonedDateTime time = ZonedDateTime.of(2015, 6, 28, 17, 45, 12, 0, ZoneOffset.UTC);
 
         AzimuthZenithAngle result = Grena3.calculateSolarPosition(time,
