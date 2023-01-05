@@ -1,13 +1,16 @@
 package net.e175.klaus.solarpositioning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class SPATest {
 
@@ -199,6 +202,15 @@ public class SPATest {
         assertNull(res.getSunrise());
         assertEquals("2015-06-20T10:58:57+00:00", DF.format(res.getTransit())); // USNO: 10:59
         assertNull(res.getSunset());
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
+    public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
+        AzimuthZenithAngle res = SPA.calculateSolarPosition(dateTime, lat, lon, 0, 0, 1000, 10);
+
+        assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE);
+        assertEquals(refZenith, res.getZenithAngle(), TOLERANCE);
     }
 
 }

@@ -1,24 +1,16 @@
 package net.e175.klaus.solarpositioning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DeltaTTest {
 
-
-    private GregorianCalendar yearCal(int year) {
-        GregorianCalendar c = new GregorianCalendar(year, Calendar.JANUARY, 1);
-        if (year < 0) {
-            c.set(Calendar.ERA, GregorianCalendar.BC);
-            c.set(Calendar.YEAR, -year);
-        }
-        return c;
+    private LocalDate yearCal(int year) {
+        return LocalDate.of(year, 1, 1);
     }
-
 
     @Test
     public void historicalValues() {

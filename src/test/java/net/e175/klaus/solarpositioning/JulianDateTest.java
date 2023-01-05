@@ -1,13 +1,14 @@
 package net.e175.klaus.solarpositioning;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class JulianDateTest {
 

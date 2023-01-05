@@ -1,7 +1,6 @@
 package net.e175.klaus.solarpositioning;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.time.LocalDate;
 
 import static java.lang.Math.pow;
 
@@ -13,13 +12,13 @@ public final class DeltaT {
     }
 
     /**
-     * Estimate Delta T for the given Calendar. This is based on Espenak and Meeus, "Five Millennium Canon of
+     * Estimate Delta T for the given date. This is based on Espenak and Meeus, "Five Millennium Canon of
      * Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141).
      *
      * @param forDate date and time
      * @return estimated delta T value (seconds)
      */
-    public static double estimate(final GregorianCalendar forDate) {
+    public static double estimate(final LocalDate forDate) {
         final double year = decimalYear(forDate);
         final double deltaT;
 
@@ -74,18 +73,11 @@ public final class DeltaT {
             deltaT = -20 + 32 * pow(u, 2);
         }
 
-
         return deltaT;
-
     }
 
-    private static double decimalYear(GregorianCalendar forDate) {
-        double rawYear = forDate.get(Calendar.YEAR);
-        if (forDate.get(Calendar.ERA) == GregorianCalendar.BC) {
-            rawYear = -rawYear;
-        }
-
-        return rawYear + (forDate.get(Calendar.MONTH) + 1 - 0.5) / 12;
+    private static double decimalYear(LocalDate forDate) {
+        return forDate.getYear() + (forDate.getMonthValue() - 0.5) / 12;
     }
 
 }

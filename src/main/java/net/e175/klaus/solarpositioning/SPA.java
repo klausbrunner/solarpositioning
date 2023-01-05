@@ -369,11 +369,11 @@ public final class SPA {
         // refraction correction.
         // extremely silly values for p and t are silently ignored, disabling correction
         double deltaEdegrees = 0;
-        if(p > 0.0 && p < 3000.0 && t > -273 && t < 273) {
+        if (p > 0.0 && p < 3000.0 && t > -273 && t < 273) {
             // only apply refraction correction when the sun is visible
-            if(eZeroDegrees > HPRIME_0) {
+            if (eZeroDegrees > HPRIME_0) {
                 deltaEdegrees = (p / 1010.0) * (283.0 / (273.0 + t)) *
-                        1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3/(eZeroDegrees + 5.11))));
+                        1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
             }
         }
 

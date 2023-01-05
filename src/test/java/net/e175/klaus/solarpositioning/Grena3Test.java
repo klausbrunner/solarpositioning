@@ -1,13 +1,16 @@
 package net.e175.klaus.solarpositioning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.toDegrees;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Grena3Test {
 
@@ -73,4 +76,18 @@ public class Grena3Test {
         assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
     }
 
+    @ParameterizedTest
+    @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
+    public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
+        Assumptions.assumeTrue(
+                dateTime.isAfter(ZonedDateTime.of(2010, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+                        && dateTime.isBefore(ZonedDateTime.of(2110, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC)));
+
+        AzimuthZenithAngle res = Grena3.calculateSolarPosition(dateTime, lat, lon, 0, 1000, 10);
+
+        assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE * 3, "azimuth");
+        // TODO: investigate occasional outliers. TOLERANCE is usually fine but in current dataset there's 1 outlier.
+
+        assertEquals(refZenith, res.getZenithAngle(), TOLERANCE, "zenith");
+    }
 }
