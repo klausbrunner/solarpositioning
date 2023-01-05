@@ -11,7 +11,7 @@ This is a Java library for finding topocentric solar coordinates, i.e. the sunâ€
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.1</version> <!-- or whatever latest release is -->
+    <version>0.1.2</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
@@ -41,12 +41,14 @@ public class App {
 
 ### Requirements
 
-Java SE 8. (0.0.10 was the last version to work on Java 6, if you are stuck in the dark ages.)
+To run: Java 8, nothing else.
+
+To build from source: Java 9 or newer, as the -release flag for javac is used.
 
 ### Which algorithm should I use?
 
 * For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110 CE.
-* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered the reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
+* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only downside is that it's relatively slow.
 
 ### How do I get the time of sunrise or sunset?
 
@@ -68,7 +70,7 @@ Notes:
  * As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator, i.e. values for polar regions are much less reliable.    
  * The goal of this implementation is to stay close to the reference implementation of SPA, using other sources for sanity checks only.
 
-### What's with this "delta T" thing?
+### What's this "delta T" thing?
 
 See [Wikipedia](https://en.wikipedia.org/wiki/Î”T) for an explanation. For many simple applications, this value could be negligible as it's just about a minute as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a solid estimate.
 
