@@ -41,7 +41,7 @@ public class App {
 
 ### Requirements
 
-To run: Java 8, nothing else.
+To run: Java 8 or newer.
 
 To build from source: Java 9 or newer, as the -release flag for javac is used.
 
