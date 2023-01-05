@@ -17,6 +17,7 @@ public class Grena3Test {
     private static final double TOLERANCE = 0.01; // advertised max error vis-a-vis SPA
     private static final ZonedDateTime GRENA_VALIDITY_START = ZonedDateTime.of(2010, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     private static final ZonedDateTime GRENA_VALIDITY_END = ZonedDateTime.of(2110, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC);
+
     @Test
     public void testCSampleComparison() {
         ZonedDateTime time = ZonedDateTime.of(2012, 1, 1, 12, 0, 0, 0, ZoneOffset.ofHours(1));
@@ -37,16 +38,6 @@ public class Grena3Test {
 
         assertEquals(291.232854, result.getAzimuth(), TOLERANCE);
         assertEquals(76.799924, result.getZenithAngle(), TOLERANCE);
-    }
-
-    @Test
-    public void testNearEquator1() {
-        ZonedDateTime time = ZonedDateTime.of(2015, 6, 12, 9, 34, 11, 0, ZoneOffset.ofHours(-4));
-
-        AzimuthZenithAngle result = Grena3.calculateSolarPosition(time, -3.107, -60.025, 69, 1000, 20);
-
-        assertEquals(51.608, result.getAzimuth(), TOLERANCE);
-        assertEquals(44.1425, result.getZenithAngle(), TOLERANCE);
     }
 
     @Test
@@ -80,7 +71,7 @@ public class Grena3Test {
     @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
     public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
         Assumptions.assumeTrue(dateTime.isAfter(GRENA_VALIDITY_START)
-                        && dateTime.isBefore(GRENA_VALIDITY_END), "date out of validity range, skipping");
+                && dateTime.isBefore(GRENA_VALIDITY_END), "date out of validity range, skipping");
 
         AzimuthZenithAngle res = Grena3.calculateSolarPosition(dateTime, lat, lon, 0, 1000, 10);
 

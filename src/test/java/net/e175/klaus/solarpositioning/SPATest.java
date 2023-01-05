@@ -30,16 +30,6 @@ public class SPATest {
     }
 
     @Test
-    public void testNearEquator1() {
-        ZonedDateTime time = ZonedDateTime.of(2015, 6, 12, 9, 34, 11, 0, ZoneOffset.ofHours(-4));
-
-        AzimuthZenithAngle result = SPA.calculateSolarPosition(time, -3.107, -60.025, 100, 69, 1000, 20);
-
-        assertEquals(51.608, result.getAzimuth(), TOLERANCE);
-        assertEquals(44.1425, result.getZenithAngle(), TOLERANCE);
-    }
-
-    @Test
     public void testSouthernSolstice() {
         ZonedDateTime time = ZonedDateTime.of(2012, 12, 22, 12, 0, 0, 0, ZoneOffset.UTC);
 
@@ -62,9 +52,8 @@ public class SPATest {
         assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
         assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
 
-        result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67);
-        assertEquals(194.34024, result.getAzimuth(), TOLERANCE);
-        assertEquals(50.1279, result.getZenithAngle(), TOLERANCE);
+        AzimuthZenithAngle result2 = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67);
+        assertEquals(result, result2);
     }
 
     @Test
@@ -80,18 +69,7 @@ public class SPATest {
     }
 
     @Test
-    public void testOtherSpaExampleSunriseTransitSet() {
-        ZonedDateTime time = ZonedDateTime.of(2004, 12, 4, 12, 30, 30, 0, ZoneOffset.UTC);
-
-        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -35.0, 0, 0);
-
-        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
-        assertEquals("2004-12-04T04:38:56+00:00", DF.format(res.getSunrise()));
-        assertEquals("2004-12-04T19:02:02+00:00", DF.format(res.getSunset())); // SPA paper has 19:02:02.5
-    }
-
-    @Test
-    public void testNoSunset() {
+    public void testAllDay() {
         ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
         // location is Honningsvåg, Norway (near North Cape)
@@ -100,6 +78,18 @@ public class SPATest {
         assertEquals(SunriseTransitSet.Type.ALL_DAY, res.getType());
         assertNull(res.getSunrise());
         assertEquals("2015-06-17T12:16:55+02:00", DF.format(res.getTransit())); // NOAA calc says 12:16:50
+        assertNull(res.getSunset());
+    }
+
+    @Test
+    public void testAllNight() {
+        ZonedDateTime time = ZonedDateTime.of(2015, 1, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
+
+        // location is Honningsvåg, Norway (near North Cape)
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
+
+        assertEquals(SunriseTransitSet.Type.ALL_NIGHT, res.getType());
+        assertNull(res.getSunrise());
         assertNull(res.getSunset());
     }
 
@@ -167,28 +157,6 @@ public class SPATest {
         assertEquals("2015-09-27T19:20:56+13:00", DF.format(res.getSunset())); // NOAA: 19:21 (no seconds given)
     }
 
-    private static SunriseTransitSet lybRun(int year, int month, int day) {
-        ZonedDateTime time = ZonedDateTime.of(year, month, day, 0, 0, 0, 0,
-                ZoneOffset.UTC);
-        return SPA.calculateSunriseTransitSet(time, 78.2222, 15.6316, 0);
-    }
-
-    @Test
-    public void testLongyearbyen() {
-        SunriseTransitSet res;
-
-        res = lybRun(2015, 1, 20);
-        assertEquals(SunriseTransitSet.Type.ALL_NIGHT, res.getType());
-        assertNull(res.getSunrise());
-        assertNull(res.getSunset());
-
-        res = lybRun(2015, 6, 20);
-        assertEquals(SunriseTransitSet.Type.ALL_DAY, res.getType());
-        assertNull(res.getSunrise());
-        assertEquals("2015-06-20T10:58:57+00:00", DF.format(res.getTransit())); // USNO: 10:59
-        assertNull(res.getSunset());
-    }
-
     @ParameterizedTest
     @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
     public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
@@ -209,6 +177,7 @@ public class SPATest {
             assertNull(res.getSunset());
             assertNotEquals(SunriseTransitSet.Type.NORMAL, res.getType());
         } else {
+            assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
             compare(sunrise, res.getSunrise());
             compare(transit, res.getTransit());
             compare(sunset, res.getSunset());
@@ -216,8 +185,7 @@ public class SPATest {
     }
 
     private static void compare(String localTimeRef, ZonedDateTime result) {
-        DateTimeFormatter parser = DateTimeFormatter.ISO_LOCAL_TIME;
-        assertEquals(parser.parse(localTimeRef, LocalTime::from),
+        assertEquals(LocalTime.parse(localTimeRef),
                 result.toLocalTime().truncatedTo(ChronoUnit.SECONDS));
     }
 
