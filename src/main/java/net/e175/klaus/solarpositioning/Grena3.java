@@ -35,9 +35,7 @@ public final class Grena3 {
      * @param latitude  Observer's latitude, in degrees (negative south of equator).
      * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
      * @param deltaT    Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
-     *                  in seconds. See
-     *                  <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
-     *                  For the year 2015, a reasonably accurate default would be 68.
+     *                  in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
      * @return Topocentric solar position (azimuth measured eastward from north)
      * @see AzimuthZenithAngle
      */
@@ -59,9 +57,7 @@ public final class Grena3 {
      * @param latitude    Observer's latitude, in degrees (negative south of equator).
      * @param longitude   Observer's longitude, in degrees (negative west of Greenwich).
      * @param deltaT      Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
-     *                    in seconds. See
-     *                    <a href ="http://asa.usno.navy.mil/SecK/DeltaT.html">http://asa.usno.navy.mil/SecK/DeltaT.html</a>.
-     *                    For the year 2015, a reasonably accurate default would be 68.
+     *                    in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
      * @param pressure    Annual average local pressure, in millibars (or hectopascals). Used for refraction
      *                    correction of zenith angle. If unsure, 1000 is a reasonable default.
      * @param temperature Annual average local temperature, in degrees Celsius. Used for refraction correction of zenith angle.
