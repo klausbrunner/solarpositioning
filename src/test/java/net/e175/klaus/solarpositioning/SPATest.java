@@ -4,13 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SPATest {
 
@@ -166,7 +167,7 @@ public class SPATest {
         assertEquals("2015-09-27T19:20:56+13:00", DF.format(res.getSunset())); // NOAA: 19:21 (no seconds given)
     }
 
-    private SunriseTransitSet lybRun(int year, int month, int day) {
+    private static SunriseTransitSet lybRun(int year, int month, int day) {
         ZonedDateTime time = ZonedDateTime.of(year, month, day, 0, 0, 0, 0,
                 ZoneOffset.UTC);
         return SPA.calculateSunriseTransitSet(time, 78.2222, 15.6316, 0);
@@ -177,27 +178,11 @@ public class SPATest {
         SunriseTransitSet res;
 
         res = lybRun(2015, 1, 20);
-        // USNO for comparison: https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-01-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
         assertEquals(SunriseTransitSet.Type.ALL_NIGHT, res.getType());
         assertNull(res.getSunrise());
         assertNull(res.getSunset());
 
-        res = lybRun(2015, 2, 20);
-        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-02-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
-        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
-        assertEquals("2015-02-20T09:07:12+00:00", DF.format(res.getSunrise())); // USNO: 09:07, timeanddate.com: no sunrise
-        assertEquals("2015-02-20T11:11:12+00:00", DF.format(res.getTransit())); // USNO: 11:11
-        assertEquals("2015-02-20T13:17:33+00:00", DF.format(res.getSunset())); // USNO: 13:17, timeanddate.com: no sunset
-
-        res = lybRun(2015, 3, 20);
-        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-03-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
-        assertEquals(SunriseTransitSet.Type.NORMAL, res.getType());
-        assertEquals("2015-03-20T04:54:24+00:00", DF.format(res.getSunrise())); // USNO: 04:54
-        assertEquals("2015-03-20T11:05:01+00:00", DF.format(res.getTransit())); // USNO: 11:05
-        assertEquals("2015-03-20T17:19:32+00:00", DF.format(res.getSunset())); // USNO: 17:20
-
         res = lybRun(2015, 6, 20);
-        // https://aa.usno.navy.mil/calculated/rstt/oneday?date=2015-06-20&lat=78.2222&lon=15.6316&label=Longyearbyen&tz=0.00&tz_sign=-1&tz_label=false&dst=false&submit=Get+Data
         assertEquals(SunriseTransitSet.Type.ALL_DAY, res.getType());
         assertNull(res.getSunrise());
         assertEquals("2015-06-20T10:58:57+00:00", DF.format(res.getTransit())); // USNO: 10:59
@@ -211,6 +196,29 @@ public class SPATest {
 
         assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE);
         assertEquals(refZenith, res.getZenithAngle(), TOLERANCE);
+    }
+
+
+    @ParameterizedTest
+    @CsvFileSource(resources = "/sunrise/spa_reference_testdata.csv")
+    public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, String sunrise, String transit, String sunset) {
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+
+        if (sunrise.startsWith("-999")) {
+            assertNull(res.getSunrise());
+            assertNull(res.getSunset());
+            assertNotEquals(res.getType(), SunriseTransitSet.Type.NORMAL);
+        } else {
+            compare(sunrise, res.getSunrise());
+            compare(transit, res.getTransit());
+            compare(sunset, res.getSunset());
+        }
+    }
+
+    private static void compare(String localTimeRef, ZonedDateTime result) {
+        DateTimeFormatter parser = DateTimeFormatter.ISO_LOCAL_TIME;
+        assertEquals(parser.parse(localTimeRef, LocalTime::from),
+                result.toLocalTime().truncatedTo(ChronoUnit.SECONDS));
     }
 
 }
