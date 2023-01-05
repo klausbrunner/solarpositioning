@@ -1,18 +1,26 @@
 package net.e175.klaus.solarpositioning;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 /**
- * A simple wrapper class for keeping sunrise, sunset, and transit results.
+ * A simple data class for keeping sunrise, sunset, and transit results.
  */
 public final class SunriseTransitSet {
     public enum Type {
-        /** This is a normal day, with a sunrise and a sunset. */
+        /**
+         * This is a normal day, with a sunrise and a sunset.
+         */
         NORMAL,
-        /** The sun stays above the horizon all day. There is neither sunrise nor sunset. */
+        /**
+         * The sun stays above the horizon all day. There is neither sunrise nor sunset.
+         */
         ALL_DAY,
-        /** The sun stays below the horizon all day. There is neither sunrise nor sunset. */
-        ALL_NIGHT}
+        /**
+         * The sun stays below the horizon all day. There is neither sunrise nor sunset.
+         */
+        ALL_NIGHT
+    }
 
     private final Type type;
     private final ZonedDateTime sunrise;
@@ -30,20 +38,27 @@ public final class SunriseTransitSet {
         return type;
     }
 
-    /** Get time of sunrise. This may be null depending on the day's type. */
+    /**
+     * Get time of sunrise. This may be null depending on the day's type.
+     */
     public ZonedDateTime getSunrise() {
         return sunrise;
     }
 
-    /** The sun's (upper) transit, or solar noon. This is never null, even for ALL_NIGHT days. */
+    /**
+     * The sun's (upper) transit, or solar noon. This is never null, even for ALL_NIGHT days.
+     */
     public ZonedDateTime getTransit() {
         return transit;
     }
 
-    /** Get time of sunset. This may be null depending on the day's type. */
+    /**
+     * Get time of sunset. This may be null depending on the day's type.
+     */
     public ZonedDateTime getSunset() {
         return sunset;
     }
+
     @Override
     public String toString() {
         return "SunriseTransitSet{" +
@@ -52,5 +67,18 @@ public final class SunriseTransitSet {
                 ", transit=" + transit +
                 ", sunset=" + sunset +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SunriseTransitSet that = (SunriseTransitSet) o;
+        return type == that.type && Objects.equals(sunrise, that.sunrise) && transit.equals(that.transit) && Objects.equals(sunset, that.sunset);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, sunrise, transit, sunset);
     }
 }
