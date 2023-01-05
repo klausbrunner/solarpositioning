@@ -366,13 +366,20 @@ public final class SPA {
         final double eZero = asin(sin(phi) * sin(deltaPrime) + cos(phi) * cos(deltaPrime) * cos(hPrime));
         final double eZeroDegrees = toDegrees(eZero);
 
-        // sanity check: extremely silly values for p and t are silently ignored, disabling refraction correction
-        final double deltaEdegrees = (p < 0.0 || p > 3000.0 || t < -273 || t > 273) ?
-                0.0 :
-                ((p / 1010) * (283 / (273 + t))
-                        * (1.02 / (60 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))))));
+        // refraction correction.
+        // extremely silly values for p and t are silently ignored, disabling correction
+        double deltaEdegrees = 0;
+        if(p > 0.0 && p < 3000.0 && t > -273 && t < 273) {
+            // only apply refraction correction when the sun is visible
+            if(eZeroDegrees > HPRIME_0) {
+                deltaEdegrees = (p / 1010.0) * (283.0 / (273.0 + t)) *
+                        1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3/(eZeroDegrees + 5.11))));
+            }
+        }
 
-        final double topocentricZenithAngle = 90 - (eZeroDegrees + deltaEdegrees);
+        final double correctedEZeroDegrees = eZeroDegrees + deltaEdegrees;
+
+        final double topocentricZenithAngle = 90 - correctedEZeroDegrees;
 
         // Calculate the topocentric azimuth angle
         final double gamma = atan2(sin(hPrime), cos(hPrime) * sin(phi) - tan(deltaPrime) * cos(phi));
