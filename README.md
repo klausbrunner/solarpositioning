@@ -1,7 +1,11 @@
 # solarpositioning
 ![CI](https://github.com/KlausBrunner/solarpositioning/workflows/Java%20CI%20with%20Maven/badge.svg)
 
-This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date, latitude, and longitude (and other parameters). Calculations are based on well-known published algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and, alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena.
+This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
+latitude, and longitude (and other parameters). Calculations are based on well-known published
+algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
+alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
+included to validate against the reference code and other sources.
 
 ## Usage
 
@@ -11,7 +15,7 @@ This is a Java library for finding topocentric solar coordinates, i.e. the sun�
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.2</version> <!-- or whatever latest release is -->
+    <version>0.1.3</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
@@ -80,4 +84,4 @@ The DeltaT class provides an estimator based on polynomials fitting a number of 
 
 ### Is the code thread-safe?
 
-Yes. None of the classes hold any mutable shared state. As the calculation is obviously CPU-bound, explicit multithreading does make sense whenever a lot of positions need to be calculated.
+Yes. None of the classes hold any mutable shared state.
