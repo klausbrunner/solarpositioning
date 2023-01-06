@@ -1,10 +1,10 @@
              o  ,    o  ,                                   LONGYEARBYEN NO                            Astronomical Applications Dept.
-Location: E015 38, N78 13                          Rise and Set for the Sun for 2020                   U. S. Naval Observatory        
-                                                                                                       Washington, DC  20392-5420     
-                                                            Universal Time                                                            
-                                                                                                                                      
-                                                                                                                                      
-       Jan.       Feb.       Mar.       Apr.       May        June       July       Aug.       Sept.      Oct.       Nov.       Dec.  
+Location: E015 38, N78 13                          Rise and Set for the Sun for 2020                   U. S. Naval Observatory
+                                                                                                       Washington, DC  20392-5420
+                                                            Universal Time
+
+
+       Jan.       Feb.       Mar.       Apr.       May        June       July       Aug.       Sept.      Oct.       Nov.       Dec.
 Day Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set
      h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m   h m  h m
 01  ---- ----  ---- ----  0723 1459  0311 1857  **** ****  **** ****  **** ****  **** ****  0140 2007  0536 1555  ---- ----  ---- ----
@@ -23,7 +23,7 @@ Day Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set  Rise  Set 
 14  ---- ----  ---- ----  0535 1641  0053 2115  **** ****  **** ****  **** ****  **** ****  0333 1808  0720 1404  ---- ----  ---- ----
 15  ---- ----  ---- ----  0527 1649  0038 2133  **** ****  **** ****  **** ****  **** ****  0340 1800  0729 1354  ---- ----  ---- ----
 16  ---- ----  1032 1154  0520 1656  0020 2155  **** ****  **** ****  **** ****  **** ****  0347 1752  0739 1344  ---- ----  ---- ----
-16                                   2357                                                                                             
+16                                   2357
 17  ---- ----  1003 1223  0512 1703  2318 2234  **** ****  **** ****  **** ****  **** ****  0355 1744  0749 1334  ---- ----  ---- ----
 18  ---- ----  0942 1243  0504 1711  **** ****  **** ****  **** ****  **** ****  **** ****  0402 1736  0800 1323  ---- ----  ---- ----
 19  ---- ----  0925 1300  0456 1718  **** ****  **** ****  **** ****  **** ****  **** ****  0409 1729  0811 1311  ---- ----  ---- ----
