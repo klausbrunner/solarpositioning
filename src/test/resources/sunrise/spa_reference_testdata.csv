@@ -9,7 +9,7 @@
 #    spa.slope         = 0;
 #    spa.azm_rotation  = 0;
 #    spa.atmos_refract = 0.5667;
-# format: date lat lon azimuth sunrise transit sunset
+# format: date lat lon sunrise transit sunset
 #  Auckland NZ
 1910-03-05T12:30:00Z,-36.840556,174.740000,18:09:56,00:32:56,06:56:15
 1910-03-25T12:30:00Z,-36.840556,174.740000,18:28:06,00:27:28,06:27:06
