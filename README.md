@@ -28,7 +28,7 @@ import java.time.ZonedDateTime;
 
 public class App {
     public static void main(String[] args) {
-        final ZonedDateTime dateTime = new ZonedDateTime.now();
+        ZonedDateTime dateTime = new ZonedDateTime.now();
 
         AzimuthZenithAngle position = SPA.calculateSolarPosition(
                 dateTime,
@@ -63,7 +63,7 @@ SunriseTransitSet res = SPA.calculateSunriseTransitSet(
                             dateTime, 
                             70.978056, // latitude  
                             25.974722, // longitude
-                            68); // delta T
+                            69); // delta T
 ```
 
 Notes:
