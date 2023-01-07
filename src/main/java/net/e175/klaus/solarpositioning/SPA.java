@@ -65,6 +65,7 @@ public final class SPA {
         // calculate Earth radius vector, R
         final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
         final double r = calculateLBRPolynomial(jme, rTerms);
+        assert r != 0;
 
         // calculate geocentric longitude, theta
         final double thetaDegrees = limitDegreesTo360(lDegrees + 180);
@@ -328,6 +329,7 @@ public final class SPA {
         // calculate Earth radius vector, R
         final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
         final double r = calculateLBRPolynomial(jme, rTerms);
+        assert r != 0;
 
         // calculate Earth heliocentric longitude, L
         final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
@@ -367,14 +369,12 @@ public final class SPA {
         final double eZeroDegrees = toDegrees(eZero);
 
         // refraction correction.
-        // extremely silly values for p and t are silently ignored, disabling correction
+        // 1) extremely silly values for p and t are silently ignored, disabling correction
+        // 2) only apply refraction correction when the sun is visible
         double deltaEdegrees = 0;
-        if (p > 0.0 && p < 3000.0 && t > -273 && t < 273) {
-            // only apply refraction correction when the sun is visible
-            if (eZeroDegrees > HPRIME_0) {
-                deltaEdegrees = (p / 1010.0) * (283.0 / (273.0 + t)) *
-                        1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
-            }
+        if (p > 0.0 && p < 3000.0 && t > -273 && t < 273 && eZeroDegrees > HPRIME_0) {
+            deltaEdegrees = (p / 1010.0) * (283.0 / (273.0 + t)) *
+                    1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
         }
 
         final double correctedEZeroDegrees = eZeroDegrees + deltaEdegrees;

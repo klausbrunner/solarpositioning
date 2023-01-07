@@ -9,12 +9,12 @@ import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SPATest {
+class SPATest {
 
     private static final double TOLERANCE = 0.0001;
 
     @Test
-    public void testSpaExample() {
+    void testSpaExample() {
         ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, 820, 11);
@@ -24,7 +24,7 @@ public class SPATest {
     }
 
     @Test
-    public void testSouthernSolstice() {
+    void testSouthernSolstice() {
         ZonedDateTime time = ZonedDateTime.of(2012, 12, 22, 12, 0, 0, 0, ZoneOffset.UTC);
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, -41, 0, 100, 0, 1000, 20);
@@ -39,7 +39,7 @@ public class SPATest {
     }
 
     @Test
-    public void testSillyRefractionParameters() {
+    void testSillyRefractionParameters() {
         ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         AzimuthZenithAngle result = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, -2, 1000);
@@ -52,7 +52,7 @@ public class SPATest {
 
     @ParameterizedTest
     @CsvFileSource(resources = "/azimuth_zenith/spa_reference_testdata.csv")
-    public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
+    void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
         AzimuthZenithAngle res = SPA.calculateSolarPosition(dateTime, lat, lon, 0, 0, 1000, 10);
 
         assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE);

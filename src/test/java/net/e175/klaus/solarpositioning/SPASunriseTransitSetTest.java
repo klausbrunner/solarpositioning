@@ -9,12 +9,12 @@ import java.time.format.DateTimeFormatter;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class SPASunriseTransitSetTest {
+class SPASunriseTransitSetTest {
 
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssxxx");
 
     @Test
-    public void testSpaExampleSunriseTransitSet() {
+    void testSpaExampleSunriseTransitSet() {
         ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
@@ -26,7 +26,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testAllDay() {
+    void testAllDay() {
         ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
         // location is Honningsvåg, Norway (near North Cape)
@@ -39,7 +39,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testAllNight() {
+    void testAllNight() {
         ZonedDateTime time = ZonedDateTime.of(2015, 1, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
         // location is Honningsvåg, Norway (near North Cape)
@@ -51,7 +51,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testNZSunriseTransitSet() {
+    void testNZSunriseTransitSet() {
         ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(12));
 
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
@@ -63,7 +63,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testDSToffDayBerlin() {
+    void testDSToffDayBerlin() {
         ZonedDateTime time = ZonedDateTime.of(2015, 10, 25, 12, 0, 0, 0,
                 ZoneId.of("Europe/Berlin"));
 
@@ -76,7 +76,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testDSTonDayBerlin() {
+    void testDSTonDayBerlin() {
         ZonedDateTime time = ZonedDateTime.of(2016, 3, 27, 12, 0, 0, 0,
                 ZoneId.of("Europe/Berlin"));
 
@@ -89,7 +89,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testDSToffDayAuckland() {
+    void testDSToffDayAuckland() {
         ZonedDateTime time = ZonedDateTime.of(2016, 4, 3, 12, 0, 0, 0,
                 ZoneId.of("Pacific/Auckland"));
 
@@ -102,7 +102,7 @@ public class SPASunriseTransitSetTest {
     }
 
     @Test
-    public void testDSTonDayAuckland() {
+    void testDSTonDayAuckland() {
         ZonedDateTime time = ZonedDateTime.of(2015, 9, 27, 12, 0, 0, 0,
                 ZoneId.of("Pacific/Auckland"));
 
@@ -117,7 +117,7 @@ public class SPASunriseTransitSetTest {
 
     @ParameterizedTest
     @CsvFileSource(resources = "/sunrise/spa_reference_testdata.csv")
-    public void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, LocalTime sunrise, LocalTime transit, LocalTime sunset) {
+    void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, LocalTime sunrise, LocalTime transit, LocalTime sunset) {
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
 
         Duration tolerance = Duration.ofSeconds(1);
@@ -134,7 +134,7 @@ public class SPASunriseTransitSetTest {
 
     @ParameterizedTest
     @CsvFileSource(resources = "/sunrise/usno_reference_testdata.csv")
-    public void testBulkUSNOReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
+    void testBulkUSNOReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
 
         Duration tolerance = Duration.ofMinutes(1);
@@ -145,7 +145,7 @@ public class SPASunriseTransitSetTest {
 
     @ParameterizedTest
     @CsvFileSource(resources = "/sunrise/usno_reference_testdata_extreme.csv")
-    public void testBulkUSNOExtremeReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
+    void testBulkUSNOExtremeReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
 
         Duration tolerance = Duration.ofMinutes(15);
@@ -156,7 +156,8 @@ public class SPASunriseTransitSetTest {
 
     private static void compare(LocalTime localRef, ZonedDateTime zonedResult, Duration tolerance) {
         if (zonedResult == null || localRef == null) {
-            assertEquals(localRef, zonedResult);
+            assertNull(localRef);
+            assertNull(zonedResult);
         } else {
             ZonedDateTime zonedRef = ZonedDateTime.of(zonedResult.toLocalDate(), localRef, zonedResult.getZone());
 
