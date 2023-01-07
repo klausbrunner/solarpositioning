@@ -76,7 +76,7 @@ Notes:
 
 ### What's this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just about a minute as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a solid estimate.
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just over a minute (circa 69 seconds) as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a solid estimate.
 
 The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html). Here's a plot of its output compared with some published ΔT data:
 

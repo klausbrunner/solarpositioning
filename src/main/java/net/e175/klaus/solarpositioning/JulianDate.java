@@ -41,7 +41,7 @@ public final class JulianDate {
      * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *               in seconds. See
      *               <a href="https://maia.usno.navy.mil/products/deltaT">https://maia.usno.navy.mil/products/deltaT</a>.
-     *               For the year 2023, a reasonably accurate default would be 69.
+     *               For the years 2023–2028, a reasonably accurate default would be 69.
      */
     public JulianDate(final ZonedDateTime date, final double deltaT) {
         ZonedDateTime calendar = createUtcCalendar(date);
