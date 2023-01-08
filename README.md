@@ -1,5 +1,5 @@
 # solarpositioning
-![CI](https://github.com/KlausBrunner/solarpositioning/workflows/Java%20CI%20with%20Maven/badge.svg)
+![CI](https://github.com/KlausBrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://search.maven.org/search?q=g:net.e175.klaus%20a:solarpositioning) 
 
 This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
 latitude, and longitude (and other parameters). Calculations are based on well-known published
@@ -35,7 +35,7 @@ public class App {
                 48.21, // latitude (degrees)
                 16.37, // longitude (degrees)
                 190, // elevation (m)
-                DeltaT.estimate(dateTime), // delta T (s)
+                DeltaT.estimate(dateTime.toLocalDate()), // delta T (s)
                 1010, // avg. air pressure (hPa)
                 11); // avg. air temperature (°C)
         System.out.println("SPA: " + position);
