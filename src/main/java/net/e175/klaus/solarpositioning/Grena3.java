@@ -1,5 +1,6 @@
 package net.e175.klaus.solarpositioning;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import static java.lang.Math.*;
@@ -118,7 +119,7 @@ public final class Grena3 {
     }
 
     private static double calcT(ZonedDateTime date) {
-        ZonedDateTime utc = JulianDate.createUtcCalendar(date);
+        ZonedDateTime utc = date.withZoneSameInstant(ZoneOffset.UTC);
 
         int m = utc.getMonthValue();
         int y = utc.getYear();

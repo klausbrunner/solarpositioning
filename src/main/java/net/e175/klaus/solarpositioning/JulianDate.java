@@ -1,5 +1,6 @@
 package net.e175.klaus.solarpositioning;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
@@ -20,9 +21,7 @@ public final class JulianDate {
      * @param date date and time
      */
     public JulianDate(final ZonedDateTime date) {
-        ZonedDateTime utcCalendar = createUtcCalendar(date);
-        this.julianDate = calcJulianDate(utcCalendar);
-        this.deltaT = 0.0;
+        this(date, 0.0);
     }
 
     /**
@@ -32,7 +31,6 @@ public final class JulianDate {
         this.julianDate = fromJulianDate;
         this.deltaT = deltaT;
     }
-
 
     /**
      * Construct a Julian date, observing deltaT.
@@ -44,26 +42,26 @@ public final class JulianDate {
      *               For the years 2023–2028, a reasonably accurate default would be 69.
      */
     public JulianDate(final ZonedDateTime date, final double deltaT) {
-        ZonedDateTime calendar = createUtcCalendar(date);
-        this.julianDate = calcJulianDate(calendar);
+        ZonedDateTime zonedDateTime = createUtcDateTime(date).withZoneSameInstant(ZoneOffset.UTC);
+        this.julianDate = calcJulianDate(zonedDateTime.toLocalDateTime());
         this.deltaT = deltaT;
     }
 
-    static ZonedDateTime createUtcCalendar(final ZonedDateTime fromCalendar) {
-        return fromCalendar.withZoneSameInstant(ZoneOffset.UTC);
+    static ZonedDateTime createUtcDateTime(final ZonedDateTime fromDateTime) {
+        return fromDateTime.withZoneSameInstant(ZoneOffset.UTC);
     }
 
-    private double calcJulianDate(ZonedDateTime calendar) {
-        int y = calendar.getYear();
-        int m = calendar.getMonthValue();
+    private double calcJulianDate(LocalDateTime localDateTime) {
+        int y = localDateTime.getYear();
+        int m = localDateTime.getMonthValue();
 
         if (m < 3) {
             y = y - 1;
             m = m + 12;
         }
 
-        final double d = calendar.getDayOfMonth()
-                + (calendar.getHour() + (calendar.getMinute() + calendar.getSecond() / 60.0) / 60.0)
+        final double d = localDateTime.getDayOfMonth()
+                + (localDateTime.getHour() + (localDateTime.getMinute() + localDateTime.getSecond() / 60.0) / 60.0)
                 / 24.0;
         final double jd = Math.floor(365.25 * (y + 4716.0)) + Math.floor(30.6001 * (m + 1)) + d - 1524.5;
         final double a = Math.floor(y / 100.0);
