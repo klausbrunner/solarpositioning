@@ -43,11 +43,13 @@ public final class SPA {
      *                    correction of zenith angle. If unsure, 1000 is a reasonable default.
      * @param temperature Annual average local temperature, in degrees Celsius. Used for refraction correction of zenith angle.
      * @return Topocentric solar position (azimuth measured eastward from north)
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
      * @see AzimuthZenithAngle
      */
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double elevation, final double deltaT, final double pressure,
                                                             final double temperature) {
+        checkLatLonRange(latitude, longitude);
 
         // calculate Julian (ephemeris) date and millennium
         final JulianDate jd = new JulianDate(date, deltaT);
@@ -124,6 +126,12 @@ public final class SPA {
         return calculateTopocentricSolarPosition(pressure, temperature, phi, deltaPrime, hPrime);
     }
 
+    private static void checkLatLonRange(double latitude, double longitude) {
+        if(latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
+            throw new IllegalArgumentException("latitude/longitude out of range");
+        }
+    }
+
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
@@ -141,6 +149,7 @@ public final class SPA {
      * @param deltaT    Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *                  in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
      * @return Topocentric solar position (azimuth measured eastward from north)
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
      * @see AzimuthZenithAngle
      */
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
@@ -168,11 +177,14 @@ public final class SPA {
      * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
      * @param deltaT    Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *                  in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
      */
     public static SunriseTransitSet calculateSunriseTransitSet(final ZonedDateTime day,
                                                                final double latitude,
                                                                final double longitude,
                                                                final double deltaT) {
+        checkLatLonRange(latitude, longitude);
+
         final ZonedDateTime dayStart = startOfDayUT(day);
         final JulianDate jd = new JulianDate(dayStart, 0);
 

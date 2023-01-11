@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import static net.e175.klaus.solarpositioning.SunriseTransitSet.Type.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SPASunriseTransitSetTest {
 
@@ -119,6 +120,15 @@ class SPASunriseTransitSetTest {
 
         // NOAA: 07:04, 13:12:19, 19:21
         compare(res, NORMAL, "2015-09-27T07:04:14+13:00", "2015-09-27T13:12:17+13:00", "2015-09-27T19:20:56+13:00", WITHIN_A_MINUTE);
+    }
+
+    @Test
+    void testSillyLatLon() {
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+
+        assertThrows(IllegalArgumentException.class, () -> SPA.calculateSunriseTransitSet(time, 139.742476, -105.1786, 67));
+
+        assertThrows(IllegalArgumentException.class, () -> SPA.calculateSunriseTransitSet(time, 39.742476, -205.1786, 67));
     }
 
     void compare(SunriseTransitSet res, ZonedDateTime baseDateTime, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime transit, LocalTime sunset, TemporalUnitOffset tolerance) {

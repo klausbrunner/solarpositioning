@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import static java.lang.Math.PI;
 import static java.lang.Math.toDegrees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class Grena3Test {
 
@@ -65,6 +66,15 @@ class Grena3Test {
 
         AzimuthZenithAngle result2 = Grena3.calculateSolarPosition(time, 39.742476, -105.1786, 67);
         assertEquals(result, result2);
+    }
+
+    @Test
+    void testSillyLatLon() {
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+
+        assertThrows(IllegalArgumentException.class, () -> Grena3.calculateSolarPosition(time, 139.742476, -105.1786, 67, -2, 1000));
+
+        assertThrows(IllegalArgumentException.class, () -> Grena3.calculateSolarPosition(time, 39.742476, -205.1786, 67, -2, 1000));
     }
 
     @ParameterizedTest

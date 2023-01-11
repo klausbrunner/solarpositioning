@@ -8,6 +8,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SPATest {
 
@@ -48,6 +49,15 @@ class SPATest {
 
         AzimuthZenithAngle result2 = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67);
         assertEquals(result, result2);
+    }
+
+    @Test
+    void testSillyLatLon() {
+        ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+
+        assertThrows(IllegalArgumentException.class, () -> SPA.calculateSolarPosition(time, 139.742476, -105.1786, 1830.14, 67, 820, 11));
+
+        assertThrows(IllegalArgumentException.class, () -> SPA.calculateSolarPosition(time, 39.742476, -205.1786, 1830.14, 67, 820, 11));
     }
 
     @ParameterizedTest

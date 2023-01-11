@@ -38,6 +38,7 @@ public final class Grena3 {
      * @param deltaT    Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
      *                  in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
      * @return Topocentric solar position (azimuth measured eastward from north)
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
      * @see AzimuthZenithAngle
      */
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
@@ -63,11 +64,16 @@ public final class Grena3 {
      *                    correction of zenith angle. If unsure, 1000 is a reasonable default.
      * @param temperature Annual average local temperature, in degrees Celsius. Used for refraction correction of zenith angle.
      * @return Topocentric solar position (azimuth measured eastward from north)
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
      * @see AzimuthZenithAngle
      */
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double deltaT, final double pressure,
                                                             final double temperature) {
+        if(latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
+            throw new IllegalArgumentException("latitude/longitude out of range");
+        }
+
         final double t = calcT(date);
         final double tE = t + 1.1574e-5 * deltaT;
         final double omegaAtE = 0.0172019715 * tE;
