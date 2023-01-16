@@ -127,7 +127,7 @@ public final class SPA {
     }
 
     private static void checkLatLonRange(double latitude, double longitude) {
-        if(latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
+        if (latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
             throw new IllegalArgumentException("latitude/longitude out of range");
         }
     }
@@ -486,9 +486,10 @@ public final class SPA {
     }
 
     private static double calculatePolynomial(final double x, final double[] coeffs) {
-        double sum = 0;
-        for (int i = 0; i < coeffs.length; i++) {
-            sum += coeffs[i] * pow(x, i);
+        int n = coeffs.length - 1;
+        double sum = coeffs[n];
+        for (int i = n - 1; i >= 0; i--) {
+            sum = coeffs[i] + (x * sum);
         }
         return sum;
     }
