@@ -15,7 +15,7 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.3</version> <!-- or whatever latest release is -->
+    <version>0.1.5</version> <!-- or whatever latest release is -->
 </dependency>
 ```
 
@@ -38,7 +38,8 @@ public class App {
                 DeltaT.estimate(dateTime.toLocalDate()), // delta T (s)
                 1010, // avg. air pressure (hPa)
                 11); // avg. air temperature (°C)
-        System.out.println("SPA: " + position);
+        
+        System.out.println(position);
     }
 }
 ```
