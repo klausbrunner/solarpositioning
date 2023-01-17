@@ -15,7 +15,7 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.5</version> <!-- or whatever latest release is -->
+    <version>0.1.5</version>
 </dependency>
 ```
 
@@ -79,7 +79,7 @@ Notes:
 
 See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be negligible as it's just over a minute (circa 69 seconds) as of this writing. However, if you're looking for maximum accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a solid estimate.
 
-The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html). Here's a plot of its output compared with some published ΔT data:
+The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) and slightly updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html). Here's a plot of its output compared with some published ΔT data:
 
 ![deltat](resources/deltat.png)
 

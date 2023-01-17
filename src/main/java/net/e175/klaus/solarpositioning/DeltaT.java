@@ -13,7 +13,8 @@ public final class DeltaT {
 
     /**
      * Estimate Delta T for the given date. This is based on Espenak and Meeus, "Five Millennium Canon of
-     * Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141).
+     * Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141) and updated by Espenak in 2014 at
+     * <a href="https://www.eclipsewise.com/help/deltatpoly2014.html">Eclipsewise</a>.
      *
      * @param forDate date and time
      * @return estimated delta T value (seconds)
@@ -63,14 +64,14 @@ public final class DeltaT {
             double t = year - 2000;
             deltaT = 63.86 + 0.3345 * t - 0.060374 * pow(t, 2) + 0.0017275 * pow(t, 3) + 0.000651814 * pow(t, 4)
                     + 0.00002373599 * pow(t, 5);
-        } else if (year < 2050) {
-            double t = year - 2000;
-            deltaT = 62.92 + 0.32217 * t + 0.005589 * pow(t, 2);
-        } else if (year < 2150) {
-            deltaT = -20 + 32 * pow(((year - 1820) / 100), 2) - 0.5628 * (2150 - year);
+        } else if (year < 2015) {
+            double t = year - 2005;
+            deltaT = 64.69 + 0.2930 * t;
+        } else if (year <= 3000) {
+            double t = year - 2015;
+            deltaT = 67.62 + 0.3645 * t + 0.0039755 * pow(t, 2);
         } else {
-            double u = (year - 1820) / 100;
-            deltaT = -20 + 32 * pow(u, 2);
+            throw new IllegalArgumentException("no estimates possible for this time");
         }
 
         return deltaT;

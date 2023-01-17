@@ -26,28 +26,42 @@ class DeltaTTest {
 
         assertEquals(200, DeltaT.estimate(yearCal(1500)), 2);
 
-        assertEquals(7, DeltaT.estimate(yearCal(1850)), 1);
+        assertEquals(44, DeltaT.estimate(yearCal(1657)), 4);
+
+        assertEquals(13.7, DeltaT.estimate(yearCal(1750)), 2);
 
         assertEquals(7, DeltaT.estimate(yearCal(1850)), 1);
+
+        assertEquals(1.04, DeltaT.estimate(yearCal(1870)), 1);
 
         assertEquals(-3, DeltaT.estimate(yearCal(1900)), 1);
+
+        assertEquals(10.38, DeltaT.estimate(yearCal(1910)), 1);
+
+        assertEquals(24.02, DeltaT.estimate(yearCal(1930)), 1);
 
         assertEquals(29, DeltaT.estimate(yearCal(1950)), 1);
     }
 
     @Test
     void testObservedValues() {
-        assertEquals(31.1, DeltaT.estimate(yearCal(1955)), 1);
+        // values taken from https://maia.usno.navy.mil/products/deltaT
 
-        assertEquals(45.5, DeltaT.estimate(yearCal(1975)), 1);
+        assertEquals(45.4761, DeltaT.estimate(yearCal(1975)), 1);
 
-        assertEquals(56.9, DeltaT.estimate(yearCal(1990)), 1);
+        assertEquals(56.8553, DeltaT.estimate(yearCal(1990)), 1);
 
-        assertEquals(63.8, DeltaT.estimate(yearCal(2000)), 1);
+        assertEquals(63.8285, DeltaT.estimate(yearCal(2000)), 1);
 
-        assertEquals(64.7, DeltaT.estimate(yearCal(2005)), 1);
+        assertEquals(64.6876, DeltaT.estimate(yearCal(2005)), 1);
 
-        assertEquals(68.0, DeltaT.estimate(yearCal(2015)), 2);
+        assertEquals(66.0699, DeltaT.estimate(yearCal(2010)), 1);
+
+        assertEquals(67.6439, DeltaT.estimate(yearCal(2015)), 1);
+
+        assertEquals(69.3612, DeltaT.estimate(yearCal(2020)), 1);
+
+        assertEquals(69.2945, DeltaT.estimate(yearCal(2022)), 2);
     }
 
 }
