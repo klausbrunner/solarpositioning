@@ -1,6 +1,8 @@
 package net.e175.klaus.solarpositioning;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 
 import java.time.LocalDate;
 
@@ -43,25 +45,15 @@ class DeltaTTest {
         assertEquals(29, DeltaT.estimate(yearCal(1950)), 1);
     }
 
-    @Test
-    void testObservedValues() {
-        // values taken from https://maia.usno.navy.mil/products/deltaT
+    @ParameterizedTest
+    @CsvFileSource(resources = "/deltat/deltat.data.txt")
+    void testUSNODataRecent(String line) {
+        // CsvFileSource apparently can't deal with space-separated formats, so need to DIY here
+        String[] parts = line.split("\\s+");
+        LocalDate date = LocalDate.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        double deltaT = Double.parseDouble(parts[3]);
 
-        assertEquals(45.4761, DeltaT.estimate(yearCal(1975)), 1);
-
-        assertEquals(56.8553, DeltaT.estimate(yearCal(1990)), 1);
-
-        assertEquals(63.8285, DeltaT.estimate(yearCal(2000)), 1);
-
-        assertEquals(64.6876, DeltaT.estimate(yearCal(2005)), 1);
-
-        assertEquals(66.0699, DeltaT.estimate(yearCal(2010)), 1);
-
-        assertEquals(67.6439, DeltaT.estimate(yearCal(2015)), 1);
-
-        assertEquals(69.3612, DeltaT.estimate(yearCal(2020)), 1);
-
-        assertEquals(69.2945, DeltaT.estimate(yearCal(2022)), 2);
+        assertEquals(deltaT, DeltaT.estimate(date), deltaT * 0.05);
     }
 
 }

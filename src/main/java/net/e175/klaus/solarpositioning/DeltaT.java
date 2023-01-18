@@ -21,6 +21,17 @@ public final class DeltaT {
      */
     public static double estimate(final LocalDate forDate) {
         final double year = decimalYear(forDate);
+        return estimate(year);
+    }
+
+    /**
+     * Estimate Delta T for the given decimal year.
+     *
+     * @param year decimal year (e.g. 2024.5 for the middle of 2024)
+     * @return estimated delta T value (seconds)
+     * @see #decimalYear(LocalDate)
+     */
+    public static double estimate(final double year) {
         final double deltaT;
 
         if (year < -500) {
