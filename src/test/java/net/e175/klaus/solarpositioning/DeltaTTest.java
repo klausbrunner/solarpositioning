@@ -20,9 +20,9 @@ class DeltaTTest {
 
         assertEquals(17190, DeltaT.estimate(yearCal(-400)), 2000);
 
-        assertEquals(14080, DeltaT.estimate(yearCal(-300)), 5);
+        assertEquals(14080, DeltaT.estimate(yearCal(-300)), 3);
 
-        assertEquals(12790, DeltaT.estimate(yearCal(-200)), 5);
+        assertEquals(12790, DeltaT.estimate(yearCal(-200)), 2);
 
         assertEquals(7680, DeltaT.estimate(yearCal(300)), 1);
 

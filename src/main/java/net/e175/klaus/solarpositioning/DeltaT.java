@@ -38,7 +38,7 @@ public final class DeltaT {
             double u = (year - 1820) / 100.0;
             deltaT = polynomial(u, -20, 0, 32);
         } else if (year < 500) {
-            double u = year / 100;
+            double u = year / 100.0;
             deltaT = polynomial(u, 10583.6, -1014.41, 33.78311, -5.952053, -0.1798452, 0.022174192, 0.0090316521);
         } else if (year < 1600) {
             double u = (year - 1000) / 100.0;
