@@ -65,8 +65,8 @@ class SPATest {
     void testBulkSpaReferenceValues(ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
         AzimuthZenithAngle res = SPA.calculateSolarPosition(dateTime, lat, lon, 0, 0, 1000, 10);
 
-        assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE);
-        assertEquals(refZenith, res.getZenithAngle(), TOLERANCE);
+        assertEquals(refAzimuth, res.getAzimuth(), TOLERANCE / 100);
+        assertEquals(refZenith, res.getZenithAngle(), TOLERANCE / 100);
     }
 
 }

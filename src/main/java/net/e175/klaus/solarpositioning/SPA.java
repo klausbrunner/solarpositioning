@@ -330,7 +330,7 @@ public final class SPA {
      * Limit to 0..1 if absolute value > 2. Refer to A.2.10 in NREL report.
      */
     private static double limitIfNecessary(double val) {
-        return (Math.abs(val) > 2.0) ? limitTo(val, 1.0) : val;
+        return (abs(val) > 2.0) ? limitTo(val, 1.0) : val;
     }
 
     private static AlphaDelta calculateAlphaDelta(double jme, double deltaPsi, double epsilonDegrees) {
@@ -414,7 +414,7 @@ public final class SPA {
     }
 
     private static double calculateTrueObliquityOfEcliptic(final JulianDate jd, final double deltaEpsilon) {
-        final double epsilon0 = calculatePolynomial(jd.getJulianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
+        final double epsilon0 = MathUtil.polynomial(jd.getJulianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
         return epsilon0 / 3600 + deltaEpsilon;
     }
 
@@ -466,7 +466,7 @@ public final class SPA {
     private static double[] calculateNutationTerms(final double jce) {
         final double[] x = new double[NUTATION_COEFFS.length];
         for (int i = 0; i < x.length; i++) {
-            x[i] = calculatePolynomial(jce, NUTATION_COEFFS[i]);
+            x[i] = MathUtil.polynomial(jce, NUTATION_COEFFS[i]);
         }
         return x;
     }
@@ -482,16 +482,7 @@ public final class SPA {
     }
 
     private static double calculateLBRPolynomial(final double jme, final double[] terms) {
-        return calculatePolynomial(jme, terms) / 1e8;
-    }
-
-    private static double calculatePolynomial(final double x, final double[] coeffs) {
-        int n = coeffs.length - 1;
-        double sum = coeffs[n];
-        for (int i = n - 1; i >= 0; i--) {
-            sum = coeffs[i] + (x * sum);
-        }
-        return sum;
+        return MathUtil.polynomial(jme, terms) / 1e8;
     }
 
     private static double[] calculateLBRTerms(final double jme, final double[][][] termCoeffs) {
