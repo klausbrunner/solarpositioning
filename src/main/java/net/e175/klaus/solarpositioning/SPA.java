@@ -114,10 +114,10 @@ public final class SPA {
         final double u = atan(0.99664719 * tan(phi));
         final double x = cos(u) + elevation * cos(phi) / 6378140;
         final double y = 0.99664719 * sin(u) + (elevation * sin(phi)) / 6378140;
-        final double deltaAlphaDegrees = toDegrees(atan2(-x * sin(xi) * sin(h), cos(delta) - x * sin(xi) * cos(h)));
 
-        final double deltaPrime = atan2((sin(delta) - y * sin(xi)) * cos(toRadians(deltaAlphaDegrees)), cos(delta) - x
-                * sin(xi) * cos(h));
+        final double x1 = cos(delta) - x * sin(xi) * cos(h);
+        final double deltaAlphaDegrees = toDegrees(atan2(-x * sin(xi) * sin(h), x1));
+        final double deltaPrime = atan2((sin(delta) - y * sin(xi)) * cos(toRadians(deltaAlphaDegrees)), x1);
 
         // Calculate the topocentric local hour angle,
         final double hPrimeDegrees = hDegrees - deltaAlphaDegrees;
