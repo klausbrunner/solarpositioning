@@ -48,13 +48,13 @@ public class App {
 
 ### Requirements
 
-To run: Java 8 or newer.
+To run: Java 8 or newer. No additional runtime dependencies.
 
 To build from source: Java 9 or newer, as the -release flag for javac is used.
 
 ### Which algorithm should I use?
 
-* For many applications, Grena3 should work just fine. It's fast and pretty accurate for a time window from 2010 to 2110
+* For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from 2010 to 2110
   CE.
 * If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
   reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only
