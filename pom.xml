@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.e175.klaus</groupId>
@@ -8,8 +9,8 @@
 
     <name>solarpositioning</name>
 
-    <description>This is a Java library containing algorithms for finding the sun’s position on the sky for a given date
-        and latitude and longitude (and other parameters).
+    <description>Algorithms for finding the sun's position on the sky, as well as sunrise and sunset times, for a
+        given date and coordinates (latitude/longitude).
     </description>
     <url>https://github.com/KlausBrunner/solarpositioning</url>
     <licenses>

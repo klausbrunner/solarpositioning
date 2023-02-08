@@ -2,9 +2,9 @@
 
 ![CI](https://github.com/KlausBrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://search.maven.org/search?q=g:net.e175.klaus%20a:solarpositioning)
 
-This is a Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
-latitude, and longitude (and other parameters). Calculations are based on well-known published
-algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
+A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
+latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on 
+well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
 included to validate against the reference code and other sources.
 
@@ -78,7 +78,7 @@ Notes:
   and nights).
 * Calculation is based on the usual correction of 0.8333° on the zenith angle, i.e. sunrise and sunset are assumed to
   occur when the center of the solar disc is 50 arc-minutes below the 90° horizon.
-* For various reasons, sunrise and sunset times may differ from those given by other sources. If you feel there's
+* Sunrise and sunset times may differ from those given by other sources. If you feel there's
   something wrong with the results of this library, please make sure to compare with a reputable source such as
   the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/) and not one of the many quick-and-dirty algorithms
   found on the Web.
