@@ -28,9 +28,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:KlausBrunner/solarpositioning.git</connection>
-        <developerConnection>scm:git:git@github.com:KlausBrunner/solarpositioning.git</developerConnection>
-        <url>git@github.com:KlausBrunner/solarpositioning.git</url>
+        <connection>scm:git:git@github.com:KlausBrunner/${project.artifactId}.git</connection>
+        <developerConnection>scm:git:git@github.com:KlausBrunner/${project.artifactId}.git</developerConnection>
+        <url>git@github.com:KlausBrunner/${project.artifactId}.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -53,7 +53,6 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>3.0.0-M7</version>
                 <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
                     <useReleaseProfile>false</useReleaseProfile>
                     <releaseProfiles>publish</releaseProfiles>
                     <goals>deploy</goals>
