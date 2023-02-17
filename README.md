@@ -1,6 +1,6 @@
 # solarpositioning
 
-![CI](https://github.com/KlausBrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://search.maven.org/search?q=g:net.e175.klaus%20a:solarpositioning)
+![CI](https://github.com/klausbrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://search.maven.org/search?q=g:net.e175.klaus%20a:solarpositioning)
 
 A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
 latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on 
