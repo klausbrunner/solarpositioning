@@ -49,7 +49,7 @@ public final class SPA {
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double elevation, final double deltaT, final double pressure,
                                                             final double temperature) {
-        checkLatLonRange(latitude, longitude);
+        MathUtil.checkLatLonRange(latitude, longitude);
 
         // calculate Julian (ephemeris) date and millennium
         final JulianDate jd = new JulianDate(date, deltaT);
@@ -126,12 +126,6 @@ public final class SPA {
         return calculateTopocentricSolarPosition(pressure, temperature, phi, deltaPrime, hPrime);
     }
 
-    private static void checkLatLonRange(double latitude, double longitude) {
-        if (latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
-            throw new IllegalArgumentException("latitude/longitude out of range");
-        }
-    }
-
     /**
      * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point in time on a
      * certain point of the Earth's surface.
@@ -183,7 +177,7 @@ public final class SPA {
                                                                final double latitude,
                                                                final double longitude,
                                                                final double deltaT) {
-        checkLatLonRange(latitude, longitude);
+        MathUtil.checkLatLonRange(latitude, longitude);
 
         final ZonedDateTime dayStart = startOfDayUT(day);
         final JulianDate jd = new JulianDate(dayStart, 0);

@@ -70,9 +70,7 @@ public final class Grena3 {
     public static AzimuthZenithAngle calculateSolarPosition(final ZonedDateTime date, final double latitude,
                                                             final double longitude, final double deltaT, final double pressure,
                                                             final double temperature) {
-        if (latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
-            throw new IllegalArgumentException("latitude/longitude out of range");
-        }
+        MathUtil.checkLatLonRange(latitude, longitude);
 
         final double t = calcT(date);
         final double tE = t + 1.1574e-5 * deltaT;

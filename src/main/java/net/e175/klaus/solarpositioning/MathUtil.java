@@ -24,4 +24,10 @@ final class MathUtil {
         }
         return sum;
     }
+
+    static void checkLatLonRange(double latitude, double longitude) {
+        if (latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
+            throw new IllegalArgumentException("latitude/longitude out of range");
+        }
+    }
 }
