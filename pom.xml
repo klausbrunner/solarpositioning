@@ -31,9 +31,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:klausbrunner/${project.artifactId}.git</connection>
-        <developerConnection>scm:git:git@github.com:klausbrunner/${project.artifactId}.git</developerConnection>
-        <url>git@github.com:klausbrunner/${project.artifactId}.git</url>
+        <connection>scm:git:git@github.com:klausbrunner/solarpositioning.git</connection>
+        <developerConnection>scm:git:git@github.com:klausbrunner/solarpositioning.git</developerConnection>
+        <url>https://github.com/klausbrunner/solarpositioning/tree/${project.scm.tag}</url>
         <tag>HEAD</tag>
     </scm>
 
