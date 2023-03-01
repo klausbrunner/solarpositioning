@@ -52,7 +52,7 @@ public class App {
 
 To run: Java 8 or newer. No additional runtime dependencies.
 
-To build from source: Java 9 or newer, as the -release flag for javac is used.
+To build from source: Java 11 or newer.
 
 ### Which algorithm should I use?
 
