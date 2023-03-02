@@ -18,9 +18,12 @@ import static java.lang.Math.*;
  */
 public final class SPA {
 
-    private static final double HPRIME_0 = -0.83337;
-    private static final double SIN_HPRIME_0 = sin(toRadians(HPRIME_0));
     private static final int MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    public static final double SUNRISE_SUNSET = -0.83337;
+    public static final double CIVIL_TWILIGHT = -6;
+    public static final double NAUTICAL_TWILIGHT = -12;
+    public static final double ASTRONOMICAL_TWILIGHT = -18;
 
     private SPA() {
     }
@@ -177,6 +180,30 @@ public final class SPA {
                                                                final double latitude,
                                                                final double longitude,
                                                                final double deltaT) {
+        return calculateSunriseTransitSet(day, latitude, longitude, deltaT, SUNRISE_SUNSET);
+    }
+
+    /**
+     * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The definition of sunrise
+     * or sunset can be chosen as an elevation angle.
+     * <p>
+     * This method's signature is <em>unstable</em> and may change.
+     * </p>
+     *
+     * @param day            GregorianCalendar of day for which sunrise/transit/sunset are to be calculated.
+     *                       The time of day (hour, minute, second, millisecond) is ignored.
+     * @param latitude       Observer's latitude, in degrees (negative south of equator).
+     * @param longitude      Observer's longitude, in degrees (negative west of Greenwich).
+     * @param deltaT         Difference between earth rotation time and terrestrial time (or Universal Time and Terrestrial Time),
+     *                       in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)} and {@link DeltaT}.
+     * @param elevationAngle Sun's elevation in degrees to consider as sunrise/sunset. This can be used to calculate twilight times.
+     * @throws IllegalArgumentException for nonsensical latitude/longitude
+     */
+    public static SunriseTransitSet calculateSunriseTransitSet(final ZonedDateTime day,
+                                                        final double latitude,
+                                                        final double longitude,
+                                                        final double deltaT,
+                                                        final double elevationAngle) {
         MathUtil.checkLatLonRange(latitude, longitude);
 
         final ZonedDateTime dayStart = startOfDayUT(day);
@@ -209,7 +236,7 @@ public final class SPA {
         m[0] = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360;
 
         // A.2.4. Calculate the local hour angle H0 corresponding to ...
-        final double acosArg = (SIN_HPRIME_0 - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
+        final double acosArg = (sin(toRadians(elevationAngle)) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
                 / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
         final SunriseTransitSet.Type type = acosArg < -1.0 ? SunriseTransitSet.Type.ALL_DAY :
@@ -284,12 +311,12 @@ public final class SPA {
 
         // A.2.14. Calculate the sunrise, R (in fraction of day)
         final double r = m[1] +
-                (h[1] - HPRIME_0) /
+                (h[1] - elevationAngle) /
                         (360.0 * cos(toRadians(alphaDeltaPrimes[1].delta)) * cos(phi) * sin(toRadians(hPrime[1])));
 
         // A.2.15. Calculate the sunset, S (in fraction of day)
         final double s = m[2] +
-                (h[2] - HPRIME_0) /
+                (h[2] - elevationAngle) /
                         (360.0 * cos(toRadians(alphaDeltaPrimes[2].delta)) * cos(phi) * sin(toRadians(hPrime[2])));
 
 
@@ -378,7 +405,7 @@ public final class SPA {
         // 1) extremely silly values for p and t are silently ignored, disabling correction
         // 2) only apply refraction correction when the sun is visible
         double deltaEdegrees = 0;
-        if (p > 0.0 && p < 3000.0 && t > -273 && t < 273 && eZeroDegrees > HPRIME_0) {
+        if (p > 0.0 && p < 3000.0 && t > -273 && t < 273 && eZeroDegrees > SUNRISE_SUNSET) {
             deltaEdegrees = (p / 1010.0) * (283.0 / (273.0 + t)) *
                     1.02 / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
         }

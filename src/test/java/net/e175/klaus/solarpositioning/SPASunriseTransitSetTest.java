@@ -5,16 +5,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.stream.Stream;
 
 import static net.e175.klaus.solarpositioning.SunriseTransitSet.Type.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SPASunriseTransitSetTest {
@@ -160,6 +159,14 @@ class SPASunriseTransitSetTest {
     void testBulkUSNOReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
 
+        if(res.getType() == NORMAL) {
+            AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
+            assertEquals(90.83337, pos.getZenithAngle(), 0.01);
+
+            pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
+            assertEquals(90.83337, pos.getZenithAngle(), 0.01);
+        }
+
         compare(res, dateTime, type, sunrise, null, sunset,
                 WITHIN_A_MINUTE);
     }
@@ -168,6 +175,47 @@ class SPASunriseTransitSetTest {
     @CsvFileSource(resources = "/sunrise/usno_reference_testdata_extreme.csv")
     void testBulkUSNOExtremeReferenceValues(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
         SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+
+        if (res.getType() == NORMAL) {
+            AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
+            assertEquals(90.83337, pos.getZenithAngle(), 0.1);
+
+            pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
+            assertEquals(90.83337, pos.getZenithAngle(), 0.1);
+        }
+
+        compare(res, dateTime, type, sunrise, null, sunset,
+                within(2, ChronoUnit.MINUTES));
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(resources = "/cities.csv", useHeadersInDisplayName = true)
+    void testCivilTwilightAgainstPosition(String name, double lat, double lon) {
+        Stream.iterate(ZonedDateTime.of(LocalDate.of(2023, Month.JANUARY, 1), LocalTime.of(12, 0), ZoneOffset.UTC),
+                        i -> i.plusDays(1))
+                .limit(366)
+                .forEach(dateTime -> {
+                    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.CIVIL_TWILIGHT);
+
+                    if (res.getType() == NORMAL) {
+                        AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
+                        assertEquals(96, pos.getZenithAngle(), 0.2, dateTime.toString() + " " + res);
+                    }
+                });
+    }
+
+    @ParameterizedTest
+    @CsvFileSource(resources = "/sunrise/usno_reference_testdata_civil.csv")
+    void testBulkUSNOReferenceValuesCivil(ZonedDateTime dateTime, double lat, double lon, SunriseTransitSet.Type type, LocalTime sunrise, LocalTime sunset) {
+        SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.CIVIL_TWILIGHT);
+
+        if (res.getType() == NORMAL) {
+            AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
+            assertEquals(96, pos.getZenithAngle(), 0.02);
+
+            pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
+            assertEquals(96, pos.getZenithAngle(), 0.02);
+        }
 
         compare(res, dateTime, type, sunrise, null, sunset,
                 within(2, ChronoUnit.MINUTES));
