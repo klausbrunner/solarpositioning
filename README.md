@@ -19,7 +19,7 @@ A command-line application using this library is available as [solarpos](https:/
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.8</version>
+    <version>0.1.9</version>
 </dependency>
 ```
 
@@ -69,8 +69,8 @@ The SPA class includes a method to calculate the times of sunrise, sun transit, 
 ```java
 SunriseTransitSet res=SPA.calculateSunriseTransitSet(
         dateTime,
-        70.978056, // latitude  
-        25.974722, // longitude
+        70.978, // latitude  
+        25.974, // longitude
         69); // delta T
 ```
 
@@ -89,6 +89,19 @@ Notes:
   i.e. values for polar regions are much less reliable.
 * The goal of this implementation is to stay close to the reference implementation of SPA, using other sources for
   sanity checks only.
+
+### How do I get twilight times?
+
+Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:
+
+```java
+SunriseTransitSet res=SPA.calculateSunriseTransitSet(
+        dateTime,
+        70.978, // latitude  
+        25.974, // longitude
+        69, // delta T
+        SPA.Horizon.CIVIL_TWILIGHT); 
+```
 
 ### What's this "delta T" thing?
 
