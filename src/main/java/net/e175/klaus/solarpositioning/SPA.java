@@ -21,12 +21,30 @@ public final class SPA {
 
   private static final int MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-  public static final double SUNRISE_SUNSET = -0.83337;
-  public static final double CIVIL_TWILIGHT = -6;
-  public static final double NAUTICAL_TWILIGHT = -12;
-  public static final double ASTRONOMICAL_TWILIGHT = -18;
+  private static final double SUNRISE_SUNSET = -0.83337;
 
   private SPA() {}
+
+  /**
+   * Predefined elevation angles to use in sunrise-sunset calculation. This allows to get twilight
+   * times as well as standard sunrise and sunset.
+   */
+  public enum Horizon {
+    SUNRISE_SUNSET(SPA.SUNRISE_SUNSET),
+    CIVIL_TWILIGHT(-6),
+    NAUTICAL_TWILIGHT(-12),
+    ASTRONOMICAL_TWILIGHT(-18);
+
+    private final double elevation;
+
+    public double elevation() {
+      return elevation;
+    }
+
+    Horizon(double elevation) {
+      this.elevation = elevation;
+    }
+  }
 
   /**
    * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain
@@ -196,14 +214,12 @@ public final class SPA {
    */
   public static SunriseTransitSet calculateSunriseTransitSet(
       final ZonedDateTime day, final double latitude, final double longitude, final double deltaT) {
-    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, SUNRISE_SUNSET);
+    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, Horizon.SUNRISE_SUNSET);
   }
 
   /**
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
-   * definition of sunrise or sunset can be chosen as an elevation angle.
-   *
-   * <p>This method's signature is <em>unstable</em> and may change.
+   * definition of sunrise or sunset can be chosen based on predefined elevation angles.
    *
    * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
    *     time of day (hour, minute, second, millisecond) is ignored.
@@ -212,8 +228,8 @@ public final class SPA {
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
    *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
    *     and {@link DeltaT}.
-   * @param elevationAngle Sun's elevation in degrees to consider as sunrise/sunset. This can be
-   *     used to calculate twilight times.
+   * @param horizon Horizon (basically, elevation angle) to use as the sunrise/sunset definition.
+   *     This can be used to calculate twilight times.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    */
   public static SunriseTransitSet calculateSunriseTransitSet(
@@ -221,7 +237,7 @@ public final class SPA {
       final double latitude,
       final double longitude,
       final double deltaT,
-      final double elevationAngle) {
+      final Horizon horizon) {
     MathUtil.checkLatLonRange(latitude, longitude);
 
     final ZonedDateTime dayStart = startOfDayUT(day);
@@ -256,7 +272,7 @@ public final class SPA {
 
     // A.2.4. Calculate the local hour angle H0 corresponding to ...
     final double acosArg =
-        (sin(toRadians(elevationAngle)) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
+        (sin(toRadians(horizon.elevation())) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
             / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
     final SunriseTransitSet.Type type =
@@ -332,7 +348,7 @@ public final class SPA {
     // A.2.14. Calculate the sunrise, R (in fraction of day)
     final double r =
         m[1]
-            + (h[1] - elevationAngle)
+            + (h[1] - horizon.elevation())
                 / (360.0
                     * cos(toRadians(alphaDeltaPrimes[1].delta))
                     * cos(phi)
@@ -341,7 +357,7 @@ public final class SPA {
     // A.2.15. Calculate the sunset, S (in fraction of day)
     final double s =
         m[2]
-            + (h[2] - elevationAngle)
+            + (h[2] - horizon.elevation())
                 / (360.0
                     * cos(toRadians(alphaDeltaPrimes[2].delta))
                     * cos(phi)

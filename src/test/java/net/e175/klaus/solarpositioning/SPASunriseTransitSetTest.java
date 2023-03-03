@@ -271,7 +271,7 @@ class SPASunriseTransitSetTest {
         .forEach(
             dateTime -> {
               SunriseTransitSet res =
-                  SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.CIVIL_TWILIGHT);
+                  SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
 
               if (res.getType() == NORMAL) {
                 AzimuthZenithAngle pos =
@@ -291,7 +291,7 @@ class SPASunriseTransitSetTest {
       LocalTime sunrise,
       LocalTime sunset) {
     SunriseTransitSet res =
-        SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.CIVIL_TWILIGHT);
+        SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
 
     if (res.getType() == NORMAL) {
       AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
