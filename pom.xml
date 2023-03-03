@@ -43,7 +43,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <basepom.check.skip-license>true</basepom.check.skip-license>
-        <basepom.check.fail-checkstyle>false</basepom.check.fail-checkstyle>
+        <basepom.check.skip-checkstyle>true</basepom.check.skip-checkstyle>
         <basepom.check.skip-dependency>true</basepom.check.skip-dependency>
 
         <scmCommentPrefix>build: [maven-release-plugin] [skip ci]</scmCommentPrefix>
@@ -52,6 +52,18 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>com.spotify.fmt</groupId>
+                <artifactId>fmt-maven-plugin</artifactId>
+                <version>2.19</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
