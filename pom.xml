@@ -46,7 +46,7 @@
         <basepom.check.skip-dependency>true</basepom.check.skip-dependency>
 
         <scmCommentPrefix>build: [maven-release-plugin] [skip ci]</scmCommentPrefix>
-        <tagNameFormat>v@{project.version}</tagNameFormat>
+        <basepom.release.tag-name-format>v@{project.version}</basepom.release.tag-name-format>
 
         <basepom.nexus-staging.staging-url>https://oss.sonatype.org/</basepom.nexus-staging.staging-url>
         <basepom.nexus-staging.release-after-close>true</basepom.nexus-staging.release-after-close>
