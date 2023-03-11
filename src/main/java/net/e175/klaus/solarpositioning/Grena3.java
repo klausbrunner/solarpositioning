@@ -6,8 +6,8 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 /**
- * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point
- * in time on a certain point of the Earth's surface.
+ * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+ * time on a certain point of the Earth's surface.
  *
  * <p>This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the computation
  * of sun position from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
@@ -22,8 +22,8 @@ public final class Grena3 {
   private Grena3() {}
 
   /**
-   * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain
-   * point in time on a certain point of the Earth's surface.
+   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+   * time on a certain point of the Earth's surface.
    *
    * <p>This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the
    * computation of sun position from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
@@ -53,8 +53,8 @@ public final class Grena3 {
   }
 
   /**
-   * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain
-   * point in time on a certain point of the Earth's surface.
+   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+   * time on a certain point of the Earth's surface.
    *
    * <p>This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the
    * computation of sun position from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.

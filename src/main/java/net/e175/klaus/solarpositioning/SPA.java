@@ -6,8 +6,8 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain point
- * in time on a certain point of the Earth's surface.
+ * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+ * time on a certain point of the Earth's surface.
  *
  * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
  * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
@@ -47,8 +47,8 @@ public final class SPA {
   }
 
   /**
-   * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain
-   * point in time on a certain point of the Earth's surface.
+   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+   * time on a certain point of the Earth's surface.
    *
    * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
    * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
@@ -157,8 +157,8 @@ public final class SPA {
   }
 
   /**
-   * Calculate topocentric solar position, i.e. the location of the sun on the sky for a certain
-   * point in time on a certain point of the Earth's surface.
+   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
+   * time on a certain point of the Earth's surface.
    *
    * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
    * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.

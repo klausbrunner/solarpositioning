@@ -1,6 +1,7 @@
 # solarpositioning
 
 ![CI](https://github.com/klausbrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://central.sonatype.com/search?q=solarpositioning&namespace=net.e175.klaus)
+[![javadoc](https://javadoc.io/badge2/net.e175.klaus/solarpositioning/javadoc.svg)](https://javadoc.io/doc/net.e175.klaus/solarpositioning)
 
 A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
 latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on 
@@ -15,7 +16,6 @@ A command-line application using this library is available as [solarpos](https:/
 ### Maven coordinates
 
 ```xml
-
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
