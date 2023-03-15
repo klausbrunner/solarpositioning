@@ -303,4 +303,32 @@ class SPASunriseTransitSetTest {
 
     compare(res, dateTime, type, sunrise, null, sunset, within(2, ChronoUnit.MINUTES));
   }
+
+  @Test
+  void testAllHorizons() {
+    // Lerwick, Scotland 60.1547 -1.1494
+    // 2023-03-01 according to HMNAO: "Daily Rise, Set and Twilight Times for the British Isles"
+    //
+    // sunrise sunset civil_start civil_end nautical_start nautical_end astro_start astro_end  UTC
+    // 07:04   17:31  06:22       18:13     05:34          19:01        04:45       19:51
+
+    final ZonedDateTime dateTime = ZonedDateTime.parse("2023-03-01T12:00:00Z");
+    final double lat = 60.1547;
+    final double lon = -1.1494;
+    final double deltaT = 69.2;
+
+    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT);
+    compare(res, NORMAL, "2023-03-01T07:04:00Z", null, "2023-03-01T17:31:00Z", WITHIN_A_MINUTE);
+
+    res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.CIVIL_TWILIGHT);
+    compare(res, NORMAL, "2023-03-01T06:22:00Z", null, "2023-03-01T18:13:00Z", WITHIN_A_MINUTE);
+
+    res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.NAUTICAL_TWILIGHT);
+    compare(res, NORMAL, "2023-03-01T05:34:00Z", null, "2023-03-01T19:01:00Z", WITHIN_A_MINUTE);
+
+    res =
+        SPA.calculateSunriseTransitSet(
+            dateTime, lat, lon, deltaT, SPA.Horizon.ASTRONOMICAL_TWILIGHT);
+    compare(res, NORMAL, "2023-03-01T04:45:00Z", null, "2023-03-01T19:51:00Z", WITHIN_A_MINUTE);
+  }
 }
