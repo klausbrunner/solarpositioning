@@ -4,7 +4,7 @@
 [![javadoc](https://javadoc.io/badge2/net.e175.klaus/solarpositioning/javadoc.svg)](https://javadoc.io/doc/net.e175.klaus/solarpositioning)
 
 A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
-latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on 
+latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on
 well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
 included to validate against the reference code and other sources.
@@ -16,14 +16,24 @@ A command-line application using this library is available as [solarpos](https:/
 ### Maven coordinates
 
 ```xml
+
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.9</version>
+    <version>0.1.10</version>
 </dependency>
 ```
 
+### Requirements
+
+To run: Java 8 or newer. No additional runtime dependencies.
+
+To build from source: Java 11 or newer.
+
 ### Code
+
+The library's API is intentionally "flat", comprising a handful of static methods and simple record-like result classes.
+To get refraction-corrected topocentric coordinates:
 
 ```java
 import net.e175.klaus.solarpositioning.*;
@@ -34,6 +44,7 @@ public class App {
     public static void main(String[] args) {
         ZonedDateTime dateTime = new ZonedDateTime.now();
 
+        // replace SPA with Grena3 as needed
         AzimuthZenithAngle position = SPA.calculateSolarPosition(
                 dateTime,
                 48.21, // latitude (degrees)
@@ -48,22 +59,6 @@ public class App {
 }
 ```
 
-### Requirements
-
-To run: Java 8 or newer. No additional runtime dependencies.
-
-To build from source: Java 11 or newer.
-
-### Which algorithm should I use?
-
-* For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from 2010 to 2110
-  CE.
-* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
-  reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only
-  downside is that it's relatively slow.
-
-### How do I get the time of sunrise or sunset?
-
 The SPA class includes a method to calculate the times of sunrise, sun transit, and sunset in one fell swoop:
 
 ```java
@@ -74,7 +69,29 @@ SunriseTransitSet res=SPA.calculateSunriseTransitSet(
         69); // delta T
 ```
 
-Notes:
+Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:
+
+```java
+SunriseTransitSet res=SPA.calculateSunriseTransitSet(
+        dateTime,
+        70.978, // latitude  
+        25.974, // longitude
+        69, // delta T
+        SPA.Horizon.CIVIL_TWILIGHT); 
+```
+
+See the Javadoc for more methods.
+
+### Which position algorithm should I use?
+
+* For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from
+  2010 to 2110
+  CE.
+* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
+  reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only
+  downside is that it's relatively slow.
+
+### Notes on sunrise, sunset, and twilight
 
 * The times of sunrise and sunset may be null if the sun never sets or rises during the specified day (i.e. polar days
   and nights).
@@ -90,22 +107,9 @@ Notes:
 * The goal of this implementation is to stay close to the reference implementation of SPA, using other sources for
   sanity checks only.
 
-### How do I get twilight times?
-
-Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:
-
-```java
-SunriseTransitSet res=SPA.calculateSunriseTransitSet(
-        dateTime,
-        70.978, // latitude  
-        25.974, // longitude
-        69, // delta T
-        SPA.Horizon.CIVIL_TWILIGHT); 
-```
-
 ### What's this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT) for an explanation. For many simple applications, this value could be
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, this value could be
 negligible as it's just over a minute (circa 69 seconds) as of this writing. However, if you're looking for maximum
 accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a
 solid estimate.

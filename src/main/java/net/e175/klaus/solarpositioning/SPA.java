@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
- * time on a certain point of the Earth's surface.
+ * Calculate topocentric solar position and sunrise/sunset/twilight times using the NREL SPA
+ * algorithm.
  *
  * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
  * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
