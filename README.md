@@ -3,7 +3,7 @@
 ![CI](https://github.com/klausbrunner/solarpositioning/workflows/CI/badge.svg) [![Maven](https://img.shields.io/maven-central/v/net.e175.klaus/solarpositioning?color=dodgerblue)](https://central.sonatype.com/search?q=solarpositioning&namespace=net.e175.klaus)
 [![javadoc](https://javadoc.io/badge2/net.e175.klaus/solarpositioning/javadoc.svg)](https://javadoc.io/doc/net.e175.klaus/solarpositioning)
 
-A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky at a given date,
+A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky for a given date,
 latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on
 well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
