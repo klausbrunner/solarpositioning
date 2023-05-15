@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.basepom</groupId>
         <artifactId>basepom-oss</artifactId>
-        <version>52</version>
+        <version>53</version>
     </parent>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
@@ -45,6 +45,7 @@
         <basepom.check.skip-checkstyle>true</basepom.check.skip-checkstyle>
         <basepom.check.skip-dependency>true</basepom.check.skip-dependency>
 
+        <basepom.release.profiles>basepom.oss-release</basepom.release.profiles>
         <scmCommentPrefix>build: [maven-release-plugin] [skip ci]</scmCommentPrefix>
         <basepom.release.tag-name-format>v@{project.version}</basepom.release.tag-name-format>
 
