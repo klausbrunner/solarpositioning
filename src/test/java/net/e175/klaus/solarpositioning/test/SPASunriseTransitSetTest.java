@@ -1,6 +1,5 @@
-package net.e175.klaus.solarpositioning;
+package net.e175.klaus.solarpositioning.test;
 
-import static net.e175.klaus.solarpositioning.SunriseTransitSet.Type.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,6 +10,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.e175.klaus.solarpositioning.SPA;
+import net.e175.klaus.solarpositioning.SolarPosition;
+import net.e175.klaus.solarpositioning.SunriseResult;
 import org.assertj.core.data.TemporalUnitOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,27 +22,25 @@ class SPASunriseTransitSetTest {
 
   private static final TemporalUnitOffset WITHIN_A_MINUTE = within(1, ChronoUnit.MINUTES);
 
-  void compare(
-      SunriseTransitSet result,
-      SunriseTransitSet.Type refType,
+  private static void compare(
+      SunriseResult result,
+      Class<?> refClass,
       String refSunrise,
       String refTransit,
       String refSunset,
       TemporalUnitOffset tolerance) {
-    if (refType != null) {
-      assertThat(result.getType()).isEqualTo(refType);
+
+    if (refClass != null) {
+      assertEquals(refClass, result.getClass());
     }
 
-    if (refType == NORMAL) {
-      assertThat(result.getSunrise()).isCloseTo(refSunrise, tolerance);
-      assertThat(result.getSunset()).isCloseTo(refSunset, tolerance);
-    } else {
-      assertThat(result.getSunrise()).isNull();
-      assertThat(result.getSunset()).isNull();
+    if (result instanceof SunriseResult.RegularDay regularDay) {
+      assertThat(regularDay.sunrise()).isCloseTo(refSunrise, tolerance);
+      assertThat(regularDay.sunset()).isCloseTo(refSunset, tolerance);
     }
 
     if (refTransit != null) {
-      assertThat(result.getTransit()).isCloseTo(refTransit, tolerance);
+      assertThat(result.transit()).isCloseTo(refTransit, tolerance);
     }
   }
 
@@ -48,11 +48,11 @@ class SPASunriseTransitSetTest {
   void testSpaExampleSunriseTransitSet() {
     ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
+    var res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
 
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2003-10-17T06:12:43-07:00",
         "2003-10-17T11:46:04-07:00",
         "2003-10-17T17:18:51-07:00",
@@ -64,9 +64,10 @@ class SPASunriseTransitSetTest {
     ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
     // location is Honningsvåg, Norway (near North Cape)
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
+    var res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
 
-    compare(res, ALL_DAY, null, "2015-06-17T12:16:55+02:00", null, WITHIN_A_MINUTE);
+    compare(
+        res, SunriseResult.AllDay.class, null, "2015-06-17T12:16:55+02:00", null, WITHIN_A_MINUTE);
   }
 
   @Test
@@ -74,21 +75,21 @@ class SPASunriseTransitSetTest {
     ZonedDateTime time = ZonedDateTime.of(2015, 1, 17, 12, 30, 30, 0, ZoneOffset.ofHours(2));
 
     // location is Honningsvåg, Norway (near North Cape)
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
+    var res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
 
-    compare(res, ALL_NIGHT, null, null, null, WITHIN_A_MINUTE);
+    compare(res, SunriseResult.AllNight.class, null, null, null, WITHIN_A_MINUTE);
   }
 
   @Test
   void testNZSunriseTransitSet() {
     ZonedDateTime time = ZonedDateTime.of(2015, 6, 17, 12, 30, 30, 0, ZoneOffset.ofHours(12));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
+    var res = SPA.calculateSunriseTransitSet(time, -36.8406, 174.74, 0);
 
     // NOAA: 7:32, 12:21:41, 17:11
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2015-06-17T07:32:26+12:00",
         "2015-06-17T12:21:46+12:00",
         "2015-06-17T17:11:03+12:00",
@@ -99,12 +100,12 @@ class SPASunriseTransitSetTest {
   void testDSToffDayBerlin() {
     ZonedDateTime time = ZonedDateTime.of(2015, 10, 25, 12, 0, 0, 0, ZoneId.of("Europe/Berlin"));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
+    var res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
 
     // NOAA: 6:49, 11:50:53, 16:52
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2015-10-25T06:49:02+01:00",
         "2015-10-25T11:50:55+01:00",
         "2015-10-25T16:51:59+01:00",
@@ -115,12 +116,12 @@ class SPASunriseTransitSetTest {
   void testDSTonDayBerlin() {
     ZonedDateTime time = ZonedDateTime.of(2016, 3, 27, 12, 0, 0, 0, ZoneId.of("Europe/Berlin"));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
+    var res = SPA.calculateSunriseTransitSet(time, 52.33, 13.3, 68);
 
     // NOAA: 06:52, 13:12:01, 19:33
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2016-03-27T06:52:19+02:00",
         "2016-03-27T13:12:02+02:00",
         "2016-03-27T19:32:49+02:00",
@@ -131,12 +132,12 @@ class SPASunriseTransitSetTest {
   void testDSToffDayAuckland() {
     ZonedDateTime time = ZonedDateTime.of(2016, 4, 3, 12, 0, 0, 0, ZoneId.of("Pacific/Auckland"));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+    var res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
 
     // NOAA: 06:36, same, 18:12
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2016-04-03T06:36:09+12:00",
         "2016-04-03T12:24:19+12:00",
         "2016-04-03T18:11:55+12:00",
@@ -147,12 +148,12 @@ class SPASunriseTransitSetTest {
   void testDSTonDayAuckland() {
     ZonedDateTime time = ZonedDateTime.of(2015, 9, 27, 12, 0, 0, 0, ZoneId.of("Pacific/Auckland"));
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
+    var res = SPA.calculateSunriseTransitSet(time, -36.84, 174.74, 68);
 
     // NOAA: 07:04, 13:12:19, 19:21
     compare(
         res,
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2015-09-27T07:04:14+13:00",
         "2015-09-27T13:12:17+13:00",
         "2015-09-27T19:20:56+13:00",
@@ -173,9 +174,9 @@ class SPASunriseTransitSetTest {
   }
 
   void compare(
-      SunriseTransitSet res,
+      SunriseResult res,
       ZonedDateTime baseDateTime,
-      SunriseTransitSet.Type type,
+      Class<?> type,
       LocalTime sunrise,
       LocalTime transit,
       LocalTime sunset,
@@ -197,7 +198,7 @@ class SPASunriseTransitSetTest {
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/sunrise/spa_reference_testdata.csv")
+  @CsvFileSource(resources = "sunrise/spa_reference_testdata.csv")
   void testBulkSpaReferenceValues(
       ZonedDateTime dateTime,
       double lat,
@@ -205,64 +206,77 @@ class SPASunriseTransitSetTest {
       LocalTime sunrise,
       LocalTime transit,
       LocalTime sunset) {
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
 
     compare(
         res,
         dateTime,
-        sunrise != null ? NORMAL : null,
+        sunrise != null ? SunriseResult.RegularDay.class : null,
         sunrise,
         transit,
         sunset,
         within(1, ChronoUnit.SECONDS));
   }
 
+  private static Class<?> dayTypeToClass(String dayType) {
+    return switch (dayType) {
+      case "NORMAL" -> SunriseResult.RegularDay.class;
+      case "ALL_DAY" -> SunriseResult.AllDay.class;
+      case "ALL_NIGHT" -> SunriseResult.AllNight.class;
+      default -> throw new IllegalStateException();
+    };
+  }
+
   @ParameterizedTest
-  @CsvFileSource(resources = "/sunrise/usno_reference_testdata.csv")
+  @CsvFileSource(resources = "sunrise/usno_reference_testdata.csv")
   void testBulkUSNOReferenceValues(
       ZonedDateTime dateTime,
       double lat,
       double lon,
-      SunriseTransitSet.Type type,
+      String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var typeClass = dayTypeToClass(typeString);
 
-    if (res.getType() == NORMAL) {
-      AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
-      assertEquals(90.83337, pos.getZenithAngle(), 0.01);
+    if (typeClass.equals(SunriseResult.RegularDay.class)) {
+      var regularDay = (SunriseResult.RegularDay) res;
+      SolarPosition pos = SPA.calculateSolarPosition(regularDay.sunrise(), lat, lon, 0, 0);
+      assertEquals(90.83337, pos.zenithAngle(), 0.01);
 
-      pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
-      assertEquals(90.83337, pos.getZenithAngle(), 0.01);
+      pos = SPA.calculateSolarPosition(regularDay.sunset(), lat, lon, 0, 0);
+      assertEquals(90.83337, pos.zenithAngle(), 0.01);
     }
 
-    compare(res, dateTime, type, sunrise, null, sunset, WITHIN_A_MINUTE);
+    compare(res, dateTime, typeClass, sunrise, null, sunset, WITHIN_A_MINUTE);
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/sunrise/usno_reference_testdata_extreme.csv")
+  @CsvFileSource(resources = "sunrise/usno_reference_testdata_extreme.csv")
   void testBulkUSNOExtremeReferenceValues(
       ZonedDateTime dateTime,
       double lat,
       double lon,
-      SunriseTransitSet.Type type,
+      String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var typeClass = dayTypeToClass(typeString);
 
-    if (res.getType() == NORMAL) {
-      AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
-      assertEquals(90.83337, pos.getZenithAngle(), 0.1);
+    if (typeClass.equals(SunriseResult.RegularDay.class)) {
+      var regularDay = (SunriseResult.RegularDay) res;
+      SolarPosition pos = SPA.calculateSolarPosition(regularDay.sunrise(), lat, lon, 0, 0);
+      assertEquals(90.83337, pos.zenithAngle(), 0.1);
 
-      pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
-      assertEquals(90.83337, pos.getZenithAngle(), 0.1);
+      pos = SPA.calculateSolarPosition(regularDay.sunset(), lat, lon, 0, 0);
+      assertEquals(90.83337, pos.zenithAngle(), 0.1);
     }
 
-    compare(res, dateTime, type, sunrise, null, sunset, within(2, ChronoUnit.MINUTES));
+    compare(res, dateTime, typeClass, sunrise, null, sunset, within(2, ChronoUnit.MINUTES));
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/cities.csv", useHeadersInDisplayName = true)
+  @CsvFileSource(resources = "cities.csv", useHeadersInDisplayName = true)
   void testCivilTwilightAgainstPosition(String name, double lat, double lon) {
     Stream.iterate(
             ZonedDateTime.of(
@@ -271,38 +285,39 @@ class SPASunriseTransitSetTest {
         .limit(366)
         .forEach(
             dateTime -> {
-              SunriseTransitSet res =
+              SunriseResult res =
                   SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
 
-              if (res.getType() == NORMAL) {
-                AzimuthZenithAngle pos =
-                    SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
-                assertEquals(96, pos.getZenithAngle(), 0.2, dateTime.toString() + " " + res);
+              if (res instanceof SunriseResult.RegularDay regularDay) {
+                SolarPosition pos =
+                    SPA.calculateSolarPosition(regularDay.sunrise(), lat, lon, 0, 0);
+                assertEquals(96, pos.zenithAngle(), 0.2, dateTime.toString() + " " + res);
               }
             });
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/sunrise/usno_reference_testdata_civil.csv")
+  @CsvFileSource(resources = "sunrise/usno_reference_testdata_civil.csv")
   void testBulkUSNOReferenceValuesCivil(
       ZonedDateTime dateTime,
       double lat,
       double lon,
-      SunriseTransitSet.Type type,
+      String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    SunriseTransitSet res =
-        SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
+    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
+    var typeClass = dayTypeToClass(typeString);
 
-    if (res.getType() == NORMAL) {
-      AzimuthZenithAngle pos = SPA.calculateSolarPosition(res.getSunrise(), lat, lon, 0, 0);
-      assertEquals(96, pos.getZenithAngle(), 0.02);
+    if (typeClass.equals(SunriseResult.RegularDay.class)) {
+      var regularDay = (SunriseResult.RegularDay) res;
+      SolarPosition pos = SPA.calculateSolarPosition(regularDay.sunrise(), lat, lon, 0, 0);
+      assertEquals(96, pos.zenithAngle(), 0.02);
 
-      pos = SPA.calculateSolarPosition(res.getSunset(), lat, lon, 0, 0);
-      assertEquals(96, pos.getZenithAngle(), 0.02);
+      pos = SPA.calculateSolarPosition(regularDay.sunset(), lat, lon, 0, 0);
+      assertEquals(96, pos.zenithAngle(), 0.02);
     }
 
-    compare(res, dateTime, type, sunrise, null, sunset, within(2, ChronoUnit.MINUTES));
+    compare(res, dateTime, typeClass, sunrise, null, sunset, within(2, ChronoUnit.MINUTES));
   }
 
   @Test
@@ -318,19 +333,43 @@ class SPASunriseTransitSetTest {
     final double lon = -1.1494;
     final double deltaT = 69.2;
 
-    SunriseTransitSet res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT);
-    compare(res, NORMAL, "2023-03-01T07:04:00Z", null, "2023-03-01T17:31:00Z", WITHIN_A_MINUTE);
+    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT);
+    compare(
+        res,
+        SunriseResult.RegularDay.class,
+        "2023-03-01T07:04:00Z",
+        null,
+        "2023-03-01T17:31:00Z",
+        WITHIN_A_MINUTE);
 
     res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.CIVIL_TWILIGHT);
-    compare(res, NORMAL, "2023-03-01T06:22:00Z", null, "2023-03-01T18:13:00Z", WITHIN_A_MINUTE);
+    compare(
+        res,
+        SunriseResult.RegularDay.class,
+        "2023-03-01T06:22:00Z",
+        null,
+        "2023-03-01T18:13:00Z",
+        WITHIN_A_MINUTE);
 
     res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.NAUTICAL_TWILIGHT);
-    compare(res, NORMAL, "2023-03-01T05:34:00Z", null, "2023-03-01T19:01:00Z", WITHIN_A_MINUTE);
+    compare(
+        res,
+        SunriseResult.RegularDay.class,
+        "2023-03-01T05:34:00Z",
+        null,
+        "2023-03-01T19:01:00Z",
+        WITHIN_A_MINUTE);
 
     res =
         SPA.calculateSunriseTransitSet(
             dateTime, lat, lon, deltaT, SPA.Horizon.ASTRONOMICAL_TWILIGHT);
-    compare(res, NORMAL, "2023-03-01T04:45:00Z", null, "2023-03-01T19:51:00Z", WITHIN_A_MINUTE);
+    compare(
+        res,
+        SunriseResult.RegularDay.class,
+        "2023-03-01T04:45:00Z",
+        null,
+        "2023-03-01T19:51:00Z",
+        WITHIN_A_MINUTE);
   }
 
   @Test
@@ -346,12 +385,12 @@ class SPASunriseTransitSetTest {
     final double lon = -1.1494;
     final double deltaT = 69.2;
 
-    Map<SPA.Horizon, SunriseTransitSet> results =
+    Map<SPA.Horizon, SunriseResult> results =
         SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.values());
 
     compare(
         results.get(SPA.Horizon.SUNRISE_SUNSET),
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2023-03-01T07:04:00Z",
         null,
         "2023-03-01T17:31:00Z",
@@ -359,7 +398,7 @@ class SPASunriseTransitSetTest {
 
     compare(
         results.get(SPA.Horizon.CIVIL_TWILIGHT),
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2023-03-01T06:22:00Z",
         null,
         "2023-03-01T18:13:00Z",
@@ -367,7 +406,7 @@ class SPASunriseTransitSetTest {
 
     compare(
         results.get(SPA.Horizon.NAUTICAL_TWILIGHT),
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2023-03-01T05:34:00Z",
         null,
         "2023-03-01T19:01:00Z",
@@ -375,7 +414,7 @@ class SPASunriseTransitSetTest {
 
     compare(
         results.get(SPA.Horizon.ASTRONOMICAL_TWILIGHT),
-        NORMAL,
+        SunriseResult.RegularDay.class,
         "2023-03-01T04:45:00Z",
         null,
         "2023-03-01T19:51:00Z",

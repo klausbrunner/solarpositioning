@@ -40,9 +40,9 @@ public final class Grena3 {
    *     and {@link DeltaT}.
    * @return Topocentric solar position (azimuth measured eastward from north)
    * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see AzimuthZenithAngle
+   * @see SolarPosition
    */
-  public static AzimuthZenithAngle calculateSolarPosition(
+  public static SolarPosition calculateSolarPosition(
       final ZonedDateTime date,
       final double latitude,
       final double longitude,
@@ -73,9 +73,9 @@ public final class Grena3 {
    *     correction of zenith angle.
    * @return Topocentric solar position (azimuth measured eastward from north)
    * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see AzimuthZenithAngle
+   * @see SolarPosition
    */
-  public static AzimuthZenithAngle calculateSolarPosition(
+  public static SolarPosition calculateSolarPosition(
       final ZonedDateTime date,
       final double latitude,
       final double longitude,
@@ -138,7 +138,7 @@ public final class Grena3 {
 
     final double z = PI / 2 - eP - deltaRe;
 
-    return new AzimuthZenithAngle(toDegrees(gamma + PI) % 360.0, toDegrees(z));
+    return new SolarPosition(toDegrees(gamma + PI) % 360.0, toDegrees(z));
   }
 
   private static double calcT(ZonedDateTime date) {

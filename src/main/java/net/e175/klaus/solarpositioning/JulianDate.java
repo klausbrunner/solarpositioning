@@ -11,10 +11,7 @@ import java.time.ZonedDateTime;
  *
  * @author Klaus Brunner
  */
-public final class JulianDate {
-  private final double julianDate;
-  private final double deltaT;
-
+public record JulianDate(double julianDate, double deltaT) {
   /**
    * Construct a Julian date, assuming deltaT to be 0.
    *
@@ -22,12 +19,6 @@ public final class JulianDate {
    */
   public JulianDate(final ZonedDateTime date) {
     this(date, 0.0);
-  }
-
-  /** Construct a Julian date from another. */
-  public JulianDate(final double fromJulianDate, final double deltaT) {
-    this.julianDate = fromJulianDate;
-    this.deltaT = deltaT;
   }
 
   /**
@@ -40,16 +31,17 @@ public final class JulianDate {
    *     For the years 2023–2028, a reasonably accurate default would be 69.
    */
   public JulianDate(final ZonedDateTime date, final double deltaT) {
-    ZonedDateTime zonedDateTime = createUtcDateTime(date).withZoneSameInstant(ZoneOffset.UTC);
-    this.julianDate = calcJulianDate(zonedDateTime.toLocalDateTime());
-    this.deltaT = deltaT;
+    this(
+        calcJulianDate(
+            createUtcDateTime(date).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()),
+        deltaT);
   }
 
   static ZonedDateTime createUtcDateTime(final ZonedDateTime fromDateTime) {
     return fromDateTime.withZoneSameInstant(ZoneOffset.UTC);
   }
 
-  private double calcJulianDate(LocalDateTime localDateTime) {
+  private static double calcJulianDate(LocalDateTime localDateTime) {
     int y = localDateTime.getYear();
     int m = localDateTime.getMonthValue();
 
@@ -71,28 +63,19 @@ public final class JulianDate {
     return jd + b;
   }
 
-  public double getJulianDate() {
-    return julianDate;
-  }
-
-  public double getJulianEphemerisDay() {
+  public double julianEphemerisDay() {
     return julianDate + deltaT / 86400.0;
   }
 
-  public double getJulianCentury() {
+  public double julianCentury() {
     return (julianDate - 2451545.0) / 36525.0;
   }
 
-  public double getJulianEphemerisCentury() {
-    return (getJulianEphemerisDay() - 2451545.0) / 36525.0;
+  public double julianEphemerisCentury() {
+    return (julianEphemerisDay() - 2451545.0) / 36525.0;
   }
 
-  public double getJulianEphemerisMillennium() {
-    return getJulianEphemerisCentury() / 10.0;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%.5f", julianDate);
+  public double julianEphemerisMillennium() {
+    return julianEphemerisCentury() / 10.0;
   }
 }
