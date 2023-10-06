@@ -1,8 +1,10 @@
-package net.e175.klaus.solarpositioning;
+package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDate;
+import net.e175.klaus.solarpositioning.DeltaT;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -15,7 +17,7 @@ class DeltaTTest {
 
   @Test
   void testHistoricalValues() {
-    assertEquals(27364, DeltaT.estimate(yearCal(-1000)), 2000);
+    Assertions.assertEquals(27364, DeltaT.estimate(yearCal(-1000)), 2000);
 
     assertEquals(17190, DeltaT.estimate(yearCal(-400)), 2000);
 
@@ -47,7 +49,7 @@ class DeltaTTest {
   }
 
   @ParameterizedTest
-  @CsvFileSource(resources = "/deltat/deltat.data.txt")
+  @CsvFileSource(resources = "deltat/deltat.data.txt")
   void testUSNODataRecent(String line) {
     // CsvFileSource apparently can't deal with space-separated formats, so need to DIY here
     String[] parts = line.split("\\s+");

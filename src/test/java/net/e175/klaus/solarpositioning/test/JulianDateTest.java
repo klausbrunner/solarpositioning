@@ -1,4 +1,4 @@
-package net.e175.klaus.solarpositioning;
+package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import net.e175.klaus.solarpositioning.JulianDate;
 import org.junit.jupiter.api.Test;
 
 class JulianDateTest {
@@ -26,7 +27,7 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(time);
 
-    assertEquals(2452930.312847222, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(2452930.312847222, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
@@ -35,7 +36,7 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(utcTime);
 
-    assertEquals(2451545.0, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(2451545.0, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
@@ -44,7 +45,7 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(utcTime);
 
-    assertEquals(2026871.8, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(2026871.8, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
@@ -53,7 +54,7 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(utcTime);
 
-    assertEquals(1676496.5, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(1676496.5, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
@@ -62,7 +63,7 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(utcTime);
 
-    assertEquals(1676497.5, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(1676497.5, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
@@ -71,13 +72,13 @@ class JulianDateTest {
 
     JulianDate julDate = new JulianDate(utcTime);
 
-    assertEquals(0.0, julDate.getJulianDate(), TOLERANCE);
+    assertEquals(0.0, julDate.julianDate(), TOLERANCE);
   }
 
   @Test
   void testJulianDays() {
     JulianDate jd = new JulianDate(2452929.500000, 0);
-    assertEquals(0.03790554, jd.getJulianCentury(), TOLERANCE);
-    assertEquals(0.00379056, jd.getJulianEphemerisMillennium(), TOLERANCE);
+    assertEquals(0.03790554, jd.julianCentury(), TOLERANCE);
+    assertEquals(0.00379056, jd.julianEphemerisMillennium(), TOLERANCE);
   }
 }

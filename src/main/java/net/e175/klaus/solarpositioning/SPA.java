@@ -70,9 +70,9 @@ public final class SPA {
    *     correction of zenith angle.
    * @return Topocentric solar position (azimuth measured eastward from north)
    * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see AzimuthZenithAngle
+   * @see SolarPosition
    */
-  public static AzimuthZenithAngle calculateSolarPosition(
+  public static SolarPosition calculateSolarPosition(
       final ZonedDateTime date,
       final double latitude,
       final double longitude,
@@ -84,8 +84,8 @@ public final class SPA {
 
     // calculate Julian (ephemeris) date and millennium
     final JulianDate jd = new JulianDate(date, deltaT);
-    final double jme = jd.getJulianEphemerisMillennium();
-    final double jce = jd.getJulianEphemerisCentury();
+    final double jme = jd.julianEphemerisMillennium();
+    final double jce = jd.julianEphemerisCentury();
 
     // calculate Earth heliocentric longitude, L
     final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
@@ -178,9 +178,9 @@ public final class SPA {
    *     and {@link DeltaT}.
    * @return Topocentric solar position (azimuth measured eastward from north)
    * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see AzimuthZenithAngle
+   * @see SolarPosition
    */
-  public static AzimuthZenithAngle calculateSolarPosition(
+  public static SolarPosition calculateSolarPosition(
       final ZonedDateTime date,
       final double latitude,
       final double longitude,
@@ -190,15 +190,13 @@ public final class SPA {
         date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
   }
 
-  private static final class AlphaDelta {
-    AlphaDelta(double alpha, double delta) {
-      this.alpha = alpha;
-      this.delta = delta;
-    }
-
-    final double alpha;
-    final double delta;
+  private enum Type {
+    NORMAL,
+    ALL_DAY,
+    ALL_NIGHT
   }
+
+  private record AlphaDelta(double alpha, double delta) {}
 
   /**
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
@@ -214,22 +212,12 @@ public final class SPA {
    *     and {@link DeltaT}.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    */
-  public static SunriseTransitSet calculateSunriseTransitSet(
+  public static SunriseResult calculateSunriseTransitSet(
       final ZonedDateTime day, final double latitude, final double longitude, final double deltaT) {
     return calculateSunriseTransitSet(day, latitude, longitude, deltaT, Horizon.SUNRISE_SUNSET);
   }
 
-  private static final class RiseSetParams {
-    public RiseSetParams(double nuDegrees, AlphaDelta[] alphaDeltas, double[] m) {
-      this.nuDegrees = nuDegrees;
-      this.alphaDeltas = alphaDeltas;
-      this.m = m;
-    }
-
-    final double nuDegrees;
-    final AlphaDelta[] alphaDeltas;
-    final double[] m;
-  }
+  private record RiseSetParams(double nuDegrees, AlphaDelta[] alphaDeltas, double[] m) {}
 
   /**
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
@@ -247,7 +235,7 @@ public final class SPA {
    *     This can be used to calculate twilight times.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    */
-  public static SunriseTransitSet calculateSunriseTransitSet(
+  public static SunriseResult calculateSunriseTransitSet(
       final ZonedDateTime day,
       final double latitude,
       final double longitude,
@@ -284,7 +272,7 @@ public final class SPA {
    *     may not be mutable.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    */
-  public static Map<Horizon, SunriseTransitSet> calculateSunriseTransitSet(
+  public static Map<Horizon, SunriseResult> calculateSunriseTransitSet(
       final ZonedDateTime day,
       final double latitude,
       final double longitude,
@@ -292,7 +280,7 @@ public final class SPA {
       final Horizon... horizons) {
 
     final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
-    final Map<Horizon, SunriseTransitSet> result = new HashMap<>(horizons.length + 1, 1);
+    final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
 
     for (Horizon horizon : horizons) {
       result.put(
@@ -319,7 +307,7 @@ public final class SPA {
     final JulianDate jd = new JulianDate(dayStart, 0);
 
     // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
-    final double jce = jd.getJulianEphemerisCentury();
+    final double jce = jd.julianEphemerisCentury();
     final double[] xTerms = calculateNutationTerms(jce);
     final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
     final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
@@ -333,8 +321,8 @@ public final class SPA {
     // day, next day
     final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
     for (int i = 0; i < alphaDeltas.length; i++) {
-      JulianDate currentJd = new JulianDate(jd.getJulianDate() + i - 1, 0);
-      double currentJme = currentJd.getJulianEphemerisMillennium();
+      JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, 0);
+      double currentJme = currentJd.julianEphemerisMillennium();
       AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsi, epsilonDegrees);
       alphaDeltas[i] = ad;
     }
@@ -346,7 +334,7 @@ public final class SPA {
     return new RiseSetParams(nuDegrees, alphaDeltas, m);
   }
 
-  private static SunriseTransitSet calcRiseAndSet(
+  private static SunriseResult calcRiseAndSet(
       ZonedDateTime day,
       double longitude,
       double deltaT,
@@ -360,10 +348,8 @@ public final class SPA {
         (sin(toRadians(horizon.elevation())) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
             / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
-    final SunriseTransitSet.Type type =
-        acosArg < -1.0
-            ? SunriseTransitSet.Type.ALL_DAY
-            : (acosArg > 1.0 ? SunriseTransitSet.Type.ALL_NIGHT : SunriseTransitSet.Type.NORMAL);
+    final Type type =
+        acosArg < -1.0 ? Type.ALL_DAY : (acosArg > 1.0 ? Type.ALL_NIGHT : Type.NORMAL);
 
     final double h0 = acos(acosArg);
 
@@ -448,11 +434,12 @@ public final class SPA {
                     * cos(phi)
                     * sin(toRadians(hPrime[2])));
 
-    return new SunriseTransitSet(
-        type,
-        type == SunriseTransitSet.Type.NORMAL ? addFractionOfDay(day, r) : null,
-        addFractionOfDay(day, t),
-        type == SunriseTransitSet.Type.NORMAL ? addFractionOfDay(day, s) : null);
+    return switch (type) {
+      case NORMAL -> new SunriseResult.RegularDay(
+          addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
+      case ALL_DAY -> new SunriseResult.AllDay(addFractionOfDay(day, t));
+      case ALL_NIGHT -> new SunriseResult.AllNight(addFractionOfDay(day, t));
+    };
   }
 
   private static ZonedDateTime addFractionOfDay(ZonedDateTime day, double fraction) {
@@ -521,7 +508,7 @@ public final class SPA {
     return day.truncatedTo(ChronoUnit.DAYS);
   }
 
-  private static AzimuthZenithAngle calculateTopocentricSolarPosition(
+  private static SolarPosition calculateTopocentricSolarPosition(
       final double p,
       final double t,
       final double phi,
@@ -553,7 +540,7 @@ public final class SPA {
     final double gammaDegrees = limitDegreesTo360(toDegrees(gamma));
     final double topocentricAzimuthAngle = limitDegreesTo360(gammaDegrees + 180);
 
-    return new AzimuthZenithAngle(topocentricAzimuthAngle, topocentricZenithAngle);
+    return new SolarPosition(topocentricAzimuthAngle, topocentricZenithAngle);
   }
 
   private static double calculateGeocentricSunDeclination(
@@ -572,7 +559,7 @@ public final class SPA {
   private static double calculateTrueObliquityOfEcliptic(
       final JulianDate jd, final double deltaEpsilon) {
     final double epsilon0 =
-        MathUtil.polynomial(jd.getJulianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
+        MathUtil.polynomial(jd.julianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
     return epsilon0 / 3600 + deltaEpsilon;
   }
 
@@ -581,9 +568,9 @@ public final class SPA {
     final double nu0degrees =
         limitDegreesTo360(
             280.46061837
-                + 360.98564736629 * (jd.getJulianDate() - 2451545)
-                + 0.000387933 * pow(jd.getJulianCentury(), 2)
-                - pow(jd.getJulianCentury(), 2) / 38710000);
+                + 360.98564736629 * (jd.julianDate() - 2451545)
+                + 0.000387933 * pow(jd.julianCentury(), 2)
+                - pow(jd.julianCentury(), 2) / 38710000);
     return nu0degrees + deltaPsi * cos(toRadians(epsilonDegrees));
   }
 

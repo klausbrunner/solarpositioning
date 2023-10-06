@@ -20,19 +20,19 @@ A command-line application using this library is available as [solarpos](https:/
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>0.1.10</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
 ### Requirements
 
-To run: Java 8 or newer. No additional runtime dependencies.
+Java 17 or newer. No additional runtime dependencies.
 
-To build from source: Java 11 or newer.
+(Still stuck on old Java? Use version `0.1.10` of this library, which requires Java 8 only.)
 
 ### Code
 
-The library's API is intentionally "flat", comprising a handful of static methods and simple record-like result classes.
+The API is intentionally "flat", comprising a handful of static methods and simple record classes.
 To get refraction-corrected topocentric coordinates:
 
 ```java
@@ -45,7 +45,7 @@ public class App {
         ZonedDateTime dateTime = new ZonedDateTime.now();
 
         // replace SPA with Grena3 as needed
-        AzimuthZenithAngle position = SPA.calculateSolarPosition(
+        var position = SPA.calculateSolarPosition(
                 dateTime,
                 48.21, // latitude (degrees)
                 16.37, // longitude (degrees)
@@ -62,7 +62,7 @@ public class App {
 The SPA class includes a method to calculate the times of sunrise, sun transit, and sunset in one fell swoop:
 
 ```java
-SunriseTransitSet res=SPA.calculateSunriseTransitSet(
+var result=SPA.calculateSunriseTransitSet(
         dateTime,
         70.978, // latitude  
         25.974, // longitude
@@ -72,7 +72,7 @@ SunriseTransitSet res=SPA.calculateSunriseTransitSet(
 Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:
 
 ```java
-SunriseTransitSet res=SPA.calculateSunriseTransitSet(
+var result=SPA.calculateSunriseTransitSet(
         dateTime,
         70.978, // latitude  
         25.974, // longitude
@@ -85,32 +85,27 @@ See the Javadoc for more methods.
 ### Which position algorithm should I use?
 
 * For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from
-  2010 to 2110
-  CE.
+  2010 to 2110 CE.
 * If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
   reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only
   downside is that it's relatively slow.
 
 ### Notes on sunrise, sunset, and twilight
 
-* The times of sunrise and sunset may be null if the sun never sets or rises during the specified day (i.e. polar days
-  and nights).
-* Calculation is based on the usual correction of 0.8333° on the zenith angle, i.e. sunrise and sunset are assumed to
-  occur when the center of the solar disc is 50 arc-minutes below the 90° horizon.
-* Sunrise and sunset times may differ from those given by other sources. If you feel there's
-  something wrong with the results of this library, please make sure to compare with a reputable source such as
-  the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/) and not one of the many quick-and-dirty algorithms
-  found on the Web.
+* Calculation is based on the usual correction of 0.833° on the zenith angle, i.e. sunrise and sunset are assumed to
+  occur when the center of the solar disc is 50 arc-minutes below the horizon.
 * As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the
   nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator,
   i.e. values for polar regions are much less reliable.
-* The goal of this implementation is to stay close to the reference implementation of SPA, using other sources for
-  sanity checks only.
+* The SPA sunset/sunrise algorithm is one of the most accurate ones around. Results of this implementation correspond
+  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s, with maximum differences of just a
+  few seconds even for polar regions.
 
 ### What's this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, this value could be
-negligible as it's just over a minute (circa 69 seconds) as of this writing. However, if you're looking for maximum
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, this
+value could be
+negligible as it's just over a minute (about 70 seconds) as of this writing. However, if you're looking for maximum
 accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a
 solid estimate.
 
