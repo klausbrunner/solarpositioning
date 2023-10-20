@@ -38,6 +38,7 @@
 
     <properties>
         <project.build.targetJdk>17</project.build.targetJdk>
+        <maven.compiler.release>17</maven.compiler.release>
 
         <basepom.check.skip-license>true</basepom.check.skip-license>
         <basepom.check.skip-checkstyle>true</basepom.check.skip-checkstyle>
