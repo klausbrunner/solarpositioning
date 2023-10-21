@@ -32,7 +32,7 @@ Java 17 or newer. No additional runtime dependencies.
 
 ### Code
 
-The API is intentionally "flat", comprising a handful of static methods and simple record classes.
+The API is intentionally "flat", comprising a handful of static methods and simple records as results.
 To get refraction-corrected topocentric coordinates:
 
 ```java
@@ -59,7 +59,8 @@ public class App {
 }
 ```
 
-The SPA class includes a method to calculate the times of sunrise, sun transit, and sunset in one fell swoop:
+The SPA class includes methods to calculate the times of sunrise, sun transit, and sunset in one fell swoop. The actual 
+return type depends on the type of day (regular day, polar day, polar night).
 
 ```java
 var result=SPA.calculateSunriseTransitSet(
@@ -67,6 +68,12 @@ var result=SPA.calculateSunriseTransitSet(
         70.978, // latitude  
         25.974, // longitude
         69); // delta T
+
+if(result instanceof SunriseResult.RegularDay regular) {
+    System.out.println(regular);
+} else {
+    System.out.println("no sunrise or sunset today!");    
+}
 ```
 
 Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:

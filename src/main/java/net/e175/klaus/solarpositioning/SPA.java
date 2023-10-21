@@ -211,6 +211,7 @@ public final class SPA {
    *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
    *     and {@link DeltaT}.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
+   * @return An implementation of {@link SunriseResult} depending on the type of day.
    */
   public static SunriseResult calculateSunriseTransitSet(
       final ZonedDateTime day, final double latitude, final double longitude, final double deltaT) {
@@ -234,6 +235,7 @@ public final class SPA {
    * @param horizon Horizon (basically, elevation angle) to use as the sunrise/sunset definition.
    *     This can be used to calculate twilight times.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
+   * @return An implementation of {@link SunriseResult} depending on the type of day.
    */
   public static SunriseResult calculateSunriseTransitSet(
       final ZonedDateTime day,
@@ -268,8 +270,8 @@ public final class SPA {
    *     and {@link DeltaT}.
    * @param horizons Horizons (basically, elevation angles) to use as the sunrise/sunset definition.
    *     This can be used to calculate twilight times.
-   * @return A Map with one key-value pair for each unique horizon type and result. This map may or
-   *     may not be mutable.
+   * @return A Map with one key-value pair for each unique horizon type and {@link SunriseResult}.
+   *     This map may or may not be mutable.
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    */
   public static Map<Horizon, SunriseResult> calculateSunriseTransitSet(
