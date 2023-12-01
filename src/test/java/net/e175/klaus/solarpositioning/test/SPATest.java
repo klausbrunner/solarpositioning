@@ -22,8 +22,8 @@ class SPATest {
     SolarPosition result =
         SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67, 820, 11);
 
-    assertEquals(194.340241, result.azimuth(), TOLERANCE / 10);
-    assertEquals(50.111622, result.zenithAngle(), TOLERANCE / 10);
+    assertEquals(194.340241, result.azimuth(), TOLERANCE / 100);
+    assertEquals(50.111622, result.zenithAngle(), TOLERANCE / 100);
   }
 
   @Test

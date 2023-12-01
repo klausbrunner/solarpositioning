@@ -571,8 +571,8 @@ public final class SPA {
         limitDegreesTo360(
             280.46061837
                 + 360.98564736629 * (jd.julianDate() - 2451545)
-                + 0.000387933 * pow(jd.julianCentury(), 2)
-                - pow(jd.julianCentury(), 2) / 38710000);
+                + pow(jd.julianCentury(), 2) * (0.000387933 - jd.julianCentury() / 38710000));
+
     return nu0degrees + deltaPsi * cos(toRadians(epsilonDegrees));
   }
 
