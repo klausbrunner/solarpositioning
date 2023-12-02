@@ -16,11 +16,10 @@ A command-line application using this library is available as [solarpos](https:/
 ### Maven coordinates
 
 ```xml
-
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
 </dependency>
 ```
 
@@ -42,7 +41,7 @@ import java.time.ZonedDateTime;
 
 public class App {
     public static void main(String[] args) {
-        ZonedDateTime dateTime = new ZonedDateTime.now();
+        var dateTime = new ZonedDateTime.now();
 
         // replace SPA with Grena3 as needed
         var position = SPA.calculateSolarPosition(
