@@ -519,6 +519,17 @@ public final class SPA {
     // calculate topocentric zenith angle
     final double eZero =
         asin(sin(phi) * sin(deltaPrime) + cos(phi) * cos(deltaPrime) * cos(hPrime));
+    final double topocentricZenithAngle = calculateTopocentricZenithAngle(p, t, eZero);
+
+    // Calculate the topocentric azimuth angle
+    final double gamma = atan2(sin(hPrime), cos(hPrime) * sin(phi) - tan(deltaPrime) * cos(phi));
+    final double gammaDegrees = limitDegreesTo360(toDegrees(gamma));
+    final double topocentricAzimuthAngle = limitDegreesTo360(gammaDegrees + 180);
+
+    return new SolarPosition(topocentricAzimuthAngle, topocentricZenithAngle);
+  }
+
+  private static double calculateTopocentricZenithAngle(double p, double t, double eZero) {
     final double eZeroDegrees = toDegrees(eZero);
 
     // refraction correction.
@@ -535,14 +546,7 @@ public final class SPA {
 
     final double correctedEZeroDegrees = eZeroDegrees + deltaEdegrees;
 
-    final double topocentricZenithAngle = 90 - correctedEZeroDegrees;
-
-    // Calculate the topocentric azimuth angle
-    final double gamma = atan2(sin(hPrime), cos(hPrime) * sin(phi) - tan(deltaPrime) * cos(phi));
-    final double gammaDegrees = limitDegreesTo360(toDegrees(gamma));
-    final double topocentricAzimuthAngle = limitDegreesTo360(gammaDegrees + 180);
-
-    return new SolarPosition(topocentricAzimuthAngle, topocentricZenithAngle);
+    return 90 - correctedEZeroDegrees;
   }
 
   private static double calculateGeocentricSunDeclination(
