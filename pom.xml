@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.basepom</groupId>
         <artifactId>basepom-oss</artifactId>
-        <version>56</version>
+        <version>57</version>
     </parent>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
@@ -42,7 +42,6 @@
 
         <basepom.check.skip-license>true</basepom.check.skip-license>
         <basepom.check.skip-checkstyle>true</basepom.check.skip-checkstyle>
-        <basepom.check.skip-spotbugs>true</basepom.check.skip-spotbugs>
         <basepom.check.skip-dependency>true</basepom.check.skip-dependency>
 
         <basepom.release.profiles>basepom.oss-release</basepom.release.profiles>
