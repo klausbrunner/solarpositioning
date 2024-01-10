@@ -20,7 +20,8 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 
 class SPASunriseTransitSetTest {
 
-  private static final TemporalUnitOffset WITHIN_A_MINUTE = within(1, ChronoUnit.MINUTES);
+  private static final TemporalUnitOffset REASONABLE_TOLERANCE = within(40, ChronoUnit.SECONDS);
+  private static final TemporalUnitOffset STRICT_TOLERANCE = within(1, ChronoUnit.SECONDS);
 
   private static void compare(
       SunriseResult result,
@@ -45,6 +46,18 @@ class SPASunriseTransitSetTest {
   }
 
   @Test
+  void rejectsNullValuesInResultRecords() {
+    assertThrows(NullPointerException.class, () -> new SunriseResult.AllDay(null));
+    assertThrows(NullPointerException.class, () -> new SunriseResult.AllNight(null));
+
+    final var now = ZonedDateTime.now();
+
+    assertThrows(NullPointerException.class, () -> new SunriseResult.RegularDay(null, now, now));
+    assertThrows(NullPointerException.class, () -> new SunriseResult.RegularDay(now, null, now));
+    assertThrows(NullPointerException.class, () -> new SunriseResult.RegularDay(now, now, null));
+  }
+
+  @Test
   void testSpaExampleSunriseTransitSet() {
     ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
@@ -56,7 +69,7 @@ class SPASunriseTransitSetTest {
         "2003-10-17T06:12:43-07:00",
         "2003-10-17T11:46:04-07:00",
         "2003-10-17T17:18:51-07:00",
-        WITHIN_A_MINUTE);
+        STRICT_TOLERANCE);
   }
 
   @Test
@@ -67,7 +80,7 @@ class SPASunriseTransitSetTest {
     var res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
 
     compare(
-        res, SunriseResult.AllDay.class, null, "2015-06-17T12:16:55+02:00", null, WITHIN_A_MINUTE);
+        res, SunriseResult.AllDay.class, null, "2015-06-17T12:16:55+02:00", null, STRICT_TOLERANCE);
   }
 
   @Test
@@ -77,7 +90,7 @@ class SPASunriseTransitSetTest {
     // location is Honningsvåg, Norway (near North Cape)
     var res = SPA.calculateSunriseTransitSet(time, 70.978056, 25.974722, 0);
 
-    compare(res, SunriseResult.AllNight.class, null, null, null, WITHIN_A_MINUTE);
+    compare(res, SunriseResult.AllNight.class, null, null, null, STRICT_TOLERANCE);
   }
 
   @Test
@@ -90,10 +103,10 @@ class SPASunriseTransitSetTest {
     compare(
         res,
         SunriseResult.RegularDay.class,
-        "2015-06-17T07:32:26+12:00",
-        "2015-06-17T12:21:46+12:00",
-        "2015-06-17T17:11:03+12:00",
-        WITHIN_A_MINUTE);
+        "2015-06-17T07:32:00+12:00",
+        "2015-06-17T12:21:41+12:00",
+        "2015-06-17T17:11:00+12:00",
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -106,10 +119,10 @@ class SPASunriseTransitSetTest {
     compare(
         res,
         SunriseResult.RegularDay.class,
-        "2015-10-25T06:49:02+01:00",
-        "2015-10-25T11:50:55+01:00",
-        "2015-10-25T16:51:59+01:00",
-        WITHIN_A_MINUTE);
+        "2015-10-25T06:49:00+01:00",
+        "2015-10-25T11:50:53+01:00",
+        "2015-10-25T16:52:00+01:00",
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -122,10 +135,10 @@ class SPASunriseTransitSetTest {
     compare(
         res,
         SunriseResult.RegularDay.class,
-        "2016-03-27T06:52:19+02:00",
-        "2016-03-27T13:12:02+02:00",
-        "2016-03-27T19:32:49+02:00",
-        WITHIN_A_MINUTE);
+        "2016-03-27T06:52:00+02:00",
+        "2016-03-27T13:12:01+02:00",
+        "2016-03-27T19:33:00+02:00",
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -138,10 +151,10 @@ class SPASunriseTransitSetTest {
     compare(
         res,
         SunriseResult.RegularDay.class,
-        "2016-04-03T06:36:09+12:00",
+        "2016-04-03T06:36:00+12:00",
         "2016-04-03T12:24:19+12:00",
-        "2016-04-03T18:11:55+12:00",
-        WITHIN_A_MINUTE);
+        "2016-04-03T18:12:00+12:00",
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -154,10 +167,10 @@ class SPASunriseTransitSetTest {
     compare(
         res,
         SunriseResult.RegularDay.class,
-        "2015-09-27T07:04:14+13:00",
-        "2015-09-27T13:12:17+13:00",
-        "2015-09-27T19:20:56+13:00",
-        WITHIN_A_MINUTE);
+        "2015-09-27T07:04:00+13:00",
+        "2015-09-27T13:12:19+13:00",
+        "2015-09-27T19:21:00+13:00",
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -248,7 +261,7 @@ class SPASunriseTransitSetTest {
       assertEquals(90.83337, pos.zenithAngle(), 0.01);
     }
 
-    compare(res, dateTime, typeClass, sunrise, null, sunset, WITHIN_A_MINUTE);
+    compare(res, dateTime, typeClass, sunrise, null, sunset, REASONABLE_TOLERANCE);
   }
 
   @ParameterizedTest
@@ -340,7 +353,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T07:04:00Z",
         null,
         "2023-03-01T17:31:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.CIVIL_TWILIGHT);
     compare(
@@ -349,7 +362,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T06:22:00Z",
         null,
         "2023-03-01T18:13:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, deltaT, SPA.Horizon.NAUTICAL_TWILIGHT);
     compare(
@@ -358,7 +371,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T05:34:00Z",
         null,
         "2023-03-01T19:01:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     res =
         SPA.calculateSunriseTransitSet(
@@ -369,7 +382,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T04:45:00Z",
         null,
         "2023-03-01T19:51:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
   }
 
   @Test
@@ -394,7 +407,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T07:04:00Z",
         null,
         "2023-03-01T17:31:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     compare(
         results.get(SPA.Horizon.CIVIL_TWILIGHT),
@@ -402,7 +415,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T06:22:00Z",
         null,
         "2023-03-01T18:13:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     compare(
         results.get(SPA.Horizon.NAUTICAL_TWILIGHT),
@@ -410,7 +423,7 @@ class SPASunriseTransitSetTest {
         "2023-03-01T05:34:00Z",
         null,
         "2023-03-01T19:01:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
 
     compare(
         results.get(SPA.Horizon.ASTRONOMICAL_TWILIGHT),
@@ -418,6 +431,6 @@ class SPASunriseTransitSetTest {
         "2023-03-01T04:45:00Z",
         null,
         "2023-03-01T19:51:00Z",
-        WITHIN_A_MINUTE);
+        REASONABLE_TOLERANCE);
   }
 }

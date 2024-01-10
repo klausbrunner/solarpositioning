@@ -99,13 +99,14 @@ See the Javadoc for more methods.
 ### Notes on sunrise, sunset, and twilight
 
 * Calculation is based on the usual correction of 0.833° on the zenith angle, i.e. sunrise and sunset are assumed to
-  occur when the center of the solar disc is 50 arc-minutes below the horizon.
+  occur when the center of the solar disc is 50 arc-minutes below the horizon. While commonly used, this fixed value
+  fails to account for the varying effects of atmospheric refraction. Calculated and apparent sunrise and sunset times
+  may easily differ by several minutes (cf. [Wilson 2018](https://doi.org/10.37099/mtu.dc.etdr/697)).
 * As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the
   nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator,
   i.e. values for polar regions are much less reliable.
 * The SPA sunset/sunrise algorithm is one of the most accurate ones around. Results of this implementation correspond
-  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s, with maximum differences of just a
-  few seconds even for polar regions.
+  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s.
 
 ### What's this "delta T" thing?
 
