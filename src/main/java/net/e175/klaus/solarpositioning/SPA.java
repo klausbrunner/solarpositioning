@@ -437,8 +437,9 @@ public final class SPA {
                     * sin(toRadians(hPrime[2])));
 
     return switch (type) {
-      case NORMAL -> new SunriseResult.RegularDay(
-          addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
+      case NORMAL ->
+          new SunriseResult.RegularDay(
+              addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
       case ALL_DAY -> new SunriseResult.AllDay(addFractionOfDay(day, t));
       case ALL_NIGHT -> new SunriseResult.AllNight(addFractionOfDay(day, t));
     };
