@@ -4,7 +4,7 @@
 [![javadoc](https://javadoc.io/badge2/net.e175.klaus/solarpositioning/javadoc.svg)](https://javadoc.io/doc/net.e175.klaus/solarpositioning)
 
 A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky for a given date,
-latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations are based on
+latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations strictly follow
 well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
 included to validate against the reference code and other sources.
@@ -19,7 +19,7 @@ A command-line application using this library is available as [solarpos](https:/
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.3</version>
 </dependency>
 ```
 
