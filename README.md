@@ -35,27 +35,19 @@ The API is intentionally "flat", comprising a handful of static methods and simp
 To get refraction-corrected topocentric coordinates:
 
 ```java
-import net.e175.klaus.solarpositioning.*;
+var dateTime = new ZonedDateTime.now();
 
-import java.time.ZonedDateTime;
+// replace SPA with Grena3 as needed
+var position = SPA.calculateSolarPosition(
+    dateTime,
+    48.21, // latitude (degrees)
+    16.37, // longitude (degrees)
+    190, // elevation (m)
+    DeltaT.estimate(dateTime.toLocalDate()), // delta T (s)
+    1010, // avg. air pressure (hPa)
+    11); // avg. air temperature (°C)
 
-public class App {
-    public static void main(String[] args) {
-        var dateTime = new ZonedDateTime.now();
-
-        // replace SPA with Grena3 as needed
-        var position = SPA.calculateSolarPosition(
-                dateTime,
-                48.21, // latitude (degrees)
-                16.37, // longitude (degrees)
-                190, // elevation (m)
-                DeltaT.estimate(dateTime.toLocalDate()), // delta T (s)
-                1010, // avg. air pressure (hPa)
-                11); // avg. air temperature (°C)
-
-        System.out.println(position);
-    }
-}
+System.out.println(position);
 ```
 
 The SPA class includes methods to calculate the times of sunrise, sun transit, and sunset in one fell swoop. The actual 
