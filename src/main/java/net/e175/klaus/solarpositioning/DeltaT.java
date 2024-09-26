@@ -5,7 +5,7 @@ import static net.e175.klaus.solarpositioning.MathUtil.polynomial;
 import java.time.LocalDate;
 
 /**
- * Finding values for Delta T, the difference between Terrestrial Time (TT) and Universal Time
+ * Estimate values for Delta T, the difference between Terrestrial Time (TT) and Universal Time
  * (UT1).
  */
 public final class DeltaT {

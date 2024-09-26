@@ -9,7 +9,7 @@ public sealed interface SunriseResult {
   ZonedDateTime transit();
 
   /**
-   * Result type for a day with sunrise and sunset.
+   * A day with sunrise and sunset.
    *
    * @param sunrise Time of sunrise.
    * @param transit Time of transit (culmination), i.e. when the sun is closest to the zenith.
