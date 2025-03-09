@@ -8,7 +8,9 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    allow:
+      - dependency-type: "production"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
