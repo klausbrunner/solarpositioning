@@ -187,7 +187,7 @@ public final class SPA {
       final double elevation,
       final double deltaT) {
     return calculateSolarPosition(
-        date, latitude, longitude, elevation, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
+        date, latitude, longitude, elevation, deltaT, Double.NaN, Double.NaN);
   }
 
   private enum Type {
@@ -536,18 +536,25 @@ public final class SPA {
     // refraction correction.
     // 1) extremely silly values for p and t are silently ignored, disabling correction
     // 2) only apply refraction correction when the sun is visible
-    double deltaEdegrees = 0;
-    if (p > 0.0 && p < 3000.0 && t > -273 && t < 273 && eZeroDegrees > SUNRISE_SUNSET) {
-      deltaEdegrees =
-          (p / 1010.0)
+    boolean doCorrect =
+        Double.isFinite(p)
+            && Double.isFinite(t)
+            && p > 0.0
+            && p < 3000.0
+            && t > -273
+            && t < 273
+            && eZeroDegrees > SUNRISE_SUNSET;
+
+    if (doCorrect) {
+      return 90
+          - eZeroDegrees
+          - (p / 1010.0)
               * (283.0 / (273.0 + t))
               * 1.02
               / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
+    } else {
+      return 90 - eZeroDegrees;
     }
-
-    final double correctedEZeroDegrees = eZeroDegrees + deltaEdegrees;
-
-    return 90 - correctedEZeroDegrees;
   }
 
   private static double calculateGeocentricSunDeclination(

@@ -47,8 +47,7 @@ public final class Grena3 {
       final double latitude,
       final double longitude,
       final double deltaT) {
-    return calculateSolarPosition(
-        date, latitude, longitude, deltaT, Double.MIN_VALUE, Double.MIN_VALUE);
+    return calculateSolarPosition(date, latitude, longitude, deltaT, Double.NaN, Double.NaN);
   }
 
   /**
@@ -127,14 +126,20 @@ public final class Grena3 {
     final double gamma = atan2(sH, cH * sPhi - sDelta * cPhi / cDelta);
 
     // refraction correction (disabled for silly parameter values)
-    double deltaRe = 0.0;
-    if (pressure > 0.0 && pressure < 3000.0 && temperature > -273 && temperature < 273) {
-      deltaRe =
-          (eP > 0.0)
-              ? (0.08422 * (pressure / 1000))
-                  / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
-              : 0.0;
-    }
+    final boolean doCorrect =
+        Double.isFinite(pressure)
+            && Double.isFinite(temperature)
+            && pressure > 0.0
+            && pressure < 3000.0
+            && temperature > -273
+            && temperature < 273
+            && eP > 0.0;
+
+    final double deltaRe =
+        doCorrect
+            ? (0.08422 * (pressure / 1000))
+                / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
+            : 0.0;
 
     final double z = PI / 2 - eP - deltaRe;
 
