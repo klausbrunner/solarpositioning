@@ -102,18 +102,17 @@ See the Javadoc for more methods.
 
 ### What's this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, this
-value could be
-negligible as it's just over a minute (about 70 seconds) as of this writing. However, if you're looking for maximum
-accuracy, you should either use a current observed value (available from e.g. the US Naval Observatory) or at least a
-solid estimate.
+See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, and particularly for sunrise and sunset,
+this value could be negligible as it's just over a minute (about 70 seconds) as of this writing. However, if you're 
+looking for maximum accuracy, you should use an observed value (available from e.g. the US Naval 
+Observatory) or at least a solid estimate.
 
 The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical
-values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) in 2007 and slightly
-updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html) in 2014. Here's a plot of its output compared
-with some published ΔT data:
+values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) in 2007 and slightly updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html) in 2014.
 
-![deltat](resources/deltat.png)
+As of 2025, it appears that today's extrapolated values from this estimator are a little too high (some 2 seconds), and that gap 
+will widen in the coming decades (cf. [Morrison et al. 2021](https://royalsocietypublishing.org/doi/10.1098/rspa.2020.0776)). 
+Still, it should work sufficiently well for many applications.
 
 ### Is the code thread-safe?
 

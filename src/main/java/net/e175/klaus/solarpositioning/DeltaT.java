@@ -16,7 +16,7 @@ public final class DeltaT {
    * of Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141) and updated by Espenak in 2014 at <a
    * href="https://www.eclipsewise.com/help/deltatpoly2014.html">Eclipsewise</a>.
    *
-   * @param forDate date and time
+   * @param forDate date
    * @return estimated delta T value (seconds)
    */
   public static double estimate(final LocalDate forDate) {
