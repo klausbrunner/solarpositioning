@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -9,7 +8,7 @@
     </parent>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.4-SNAPSHOT</version>
+    <version>2.0.4</version>
     <packaging>jar</packaging>
     <name>solarpositioning</name>
 
@@ -34,7 +33,7 @@
         <connection>scm:git:git@github.com:klausbrunner/solarpositioning.git</connection>
         <developerConnection>scm:git:git@github.com:klausbrunner/solarpositioning.git</developerConnection>
         <url>https://github.com/klausbrunner/solarpositioning/tree/${project.scm.tag}</url>
-        <tag>HEAD</tag>
+        <tag>v2.0.4</tag>
     </scm>
 
     <properties>
