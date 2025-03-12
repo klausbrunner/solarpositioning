@@ -536,14 +536,7 @@ public final class SPA {
     // refraction correction.
     // 1) extremely silly values for p and t are silently ignored, disabling correction
     // 2) only apply refraction correction when the sun is visible
-    boolean doCorrect =
-        Double.isFinite(p)
-            && Double.isFinite(t)
-            && p > 0.0
-            && p < 3000.0
-            && t > -273
-            && t < 273
-            && eZeroDegrees > SUNRISE_SUNSET;
+    boolean doCorrect = MathUtil.checkRefractionParamsUsable(p, t) && eZeroDegrees > SUNRISE_SUNSET;
 
     if (doCorrect) {
       return 90

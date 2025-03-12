@@ -127,13 +127,7 @@ public final class Grena3 {
 
     // refraction correction (disabled for silly parameter values)
     final boolean doCorrect =
-        Double.isFinite(pressure)
-            && Double.isFinite(temperature)
-            && pressure > 0.0
-            && pressure < 3000.0
-            && temperature > -273
-            && temperature < 273
-            && eP > 0.0;
+        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > 0.0;
 
     final double deltaRe =
         doCorrect

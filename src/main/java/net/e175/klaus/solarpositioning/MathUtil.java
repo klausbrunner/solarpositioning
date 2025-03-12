@@ -29,4 +29,13 @@ final class MathUtil {
       throw new IllegalArgumentException("latitude/longitude out of range");
     }
   }
+
+  static boolean checkRefractionParamsUsable(double pressure, double temperature) {
+    return Double.isFinite(pressure)
+        && Double.isFinite(temperature)
+        && pressure > 0.0
+        && pressure < 3000.0
+        && temperature > -273
+        && temperature < 273;
+  }
 }
