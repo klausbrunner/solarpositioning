@@ -108,24 +108,23 @@ public final class SPA {
 
     // calculate nutation
     final double[] xTerms = calculateNutationTerms(jce);
-    final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
-    final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
-    final double deltaPsi = calculateDeltaPsiEpsilon(deltaPsiI);
-    final double deltaEpsilon = calculateDeltaPsiEpsilon(deltaEpsilonI);
+    final DeltaPsiEpsilon deltaPsiEpsilon = calculateDeltaPsiEpsilon(jce, xTerms);
 
     // calculate the true obliquity of the ecliptic
-    final double epsilonDegrees = calculateTrueObliquityOfEcliptic(jd, deltaEpsilon);
+    final double epsilonDegrees =
+        calculateTrueObliquityOfEcliptic(jd, deltaPsiEpsilon.deltaEpsilon);
     final double epsilon = toRadians(epsilonDegrees);
 
     // calculate aberration correction
     final double deltaTau = -20.4898 / (3600 * r);
 
     // calculate the apparent sun longitude
-    final double lambdaDegrees = thetaDegrees + deltaPsi + deltaTau;
+    final double lambdaDegrees = thetaDegrees + deltaPsiEpsilon.deltaPsi + deltaTau;
     final double lambda = toRadians(lambdaDegrees);
 
     // Calculate the apparent sidereal time at Greenwich
-    final double nuDegrees = calculateApparentSiderealTimeAtGreenwich(jd, deltaPsi, epsilonDegrees);
+    final double nuDegrees =
+        calculateApparentSiderealTimeAtGreenwich(jd, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
 
     // Calculate the geocentric sun right ascension
     final double alphaDegrees = calculateGeocentricSunRightAscension(beta, epsilon, lambda);
@@ -311,13 +310,12 @@ public final class SPA {
     // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
     final double jce = jd.julianEphemerisCentury();
     final double[] xTerms = calculateNutationTerms(jce);
-    final double[] deltaPsiI = calculateDeltaPsiI(jce, xTerms);
-    final double[] deltaEpsilonI = calculateDeltaEpsilonI(jce, xTerms);
-    final double deltaPsi = calculateDeltaPsiEpsilon(deltaPsiI);
-    final double deltaEpsilon = calculateDeltaPsiEpsilon(deltaEpsilonI);
-    final double epsilonDegrees = calculateTrueObliquityOfEcliptic(jd, deltaEpsilon);
+    final DeltaPsiEpsilon deltaPsiEpsilon = calculateDeltaPsiEpsilon(jce, xTerms);
+    final double epsilonDegrees =
+        calculateTrueObliquityOfEcliptic(jd, deltaPsiEpsilon.deltaEpsilon);
 
-    final double nuDegrees = calculateApparentSiderealTimeAtGreenwich(jd, deltaPsi, epsilonDegrees);
+    final double nuDegrees =
+        calculateApparentSiderealTimeAtGreenwich(jd, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
 
     // A.2.2. Calculate the geocentric right ascension and declination at 0 TT for day before, same
     // day, next day
@@ -325,7 +323,7 @@ public final class SPA {
     for (int i = 0; i < alphaDeltas.length; i++) {
       JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, 0);
       double currentJme = currentJd.julianEphemerisMillennium();
-      AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsi, epsilonDegrees);
+      AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
       alphaDeltas[i] = ad;
     }
 
@@ -518,12 +516,15 @@ public final class SPA {
       final double deltaPrime,
       final double hPrime) {
     // calculate topocentric zenith angle
-    final double eZero =
-        asin(sin(phi) * sin(deltaPrime) + cos(phi) * cos(deltaPrime) * cos(hPrime));
+    final double sinPhi = sin(phi);
+    final double cosPhi = cos(phi);
+    final double cosHPrime = cos(hPrime);
+
+    final double eZero = asin(sinPhi * sin(deltaPrime) + cosPhi * cos(deltaPrime) * cosHPrime);
     final double topocentricZenithAngle = calculateTopocentricZenithAngle(p, t, eZero);
 
     // Calculate the topocentric azimuth angle
-    final double gamma = atan2(sin(hPrime), cos(hPrime) * sin(phi) - tan(deltaPrime) * cos(phi));
+    final double gamma = atan2(sin(hPrime), cosHPrime * sinPhi - tan(deltaPrime) * cosPhi);
     final double gammaDegrees = limitDegreesTo360(toDegrees(gamma));
     final double topocentricAzimuthAngle = limitDegreesTo360(gammaDegrees + 180);
 
@@ -581,40 +582,27 @@ public final class SPA {
     return nu0degrees + deltaPsi * cos(toRadians(epsilonDegrees));
   }
 
-  private static double calculateDeltaPsiEpsilon(final double[] deltaPsiOrEpsilonI) {
-    double sum = 0;
-    for (final double element : deltaPsiOrEpsilonI) {
-      sum += element;
-    }
-    return sum / 36000000;
-  }
+  private record DeltaPsiEpsilon(double deltaPsi, double deltaEpsilon) {}
 
-  private static double[] calculateDeltaPsiI(final double jce, final double[] x) {
-    final double[] deltaPsiI = new double[TERMS_PE.length];
+  private static DeltaPsiEpsilon calculateDeltaPsiEpsilon(final double jce, final double[] x) {
+    double deltaPsi = 0;
+    double deltaEpsilon = 0;
 
     for (int i = 0; i < TERMS_PE.length; i++) {
-      final double a = TERMS_PE[i][0];
-      final double b = TERMS_PE[i][1];
-      deltaPsiI[i] = (a + b * jce) * sin(toRadians(calculateXjYtermSum(i, x)));
+      final double xjYtermSum = toRadians(calculateXjYtermSum(i, x));
+      final double[] termsPeI = TERMS_PE[i];
+      deltaPsi = Math.fma(Math.fma(termsPeI[1], jce, termsPeI[0]), sin(xjYtermSum), deltaPsi);
+      deltaEpsilon =
+          Math.fma(Math.fma(termsPeI[3], jce, termsPeI[2]), cos(xjYtermSum), deltaEpsilon);
     }
-    return deltaPsiI;
-  }
 
-  private static double[] calculateDeltaEpsilonI(final double jce, final double[] x) {
-    final double[] deltaEpsilonI = new double[TERMS_PE.length];
-
-    for (int i = 0; i < TERMS_PE.length; i++) {
-      final double c = TERMS_PE[i][2];
-      final double d = TERMS_PE[i][3];
-      deltaEpsilonI[i] = (c + d * jce) * cos(toRadians(calculateXjYtermSum(i, x)));
-    }
-    return deltaEpsilonI;
+    return new DeltaPsiEpsilon(deltaPsi / 36_000_000, deltaEpsilon / 36_000_000);
   }
 
   private static double calculateXjYtermSum(final int i, final double[] x) {
     double sum = 0;
     for (int j = 0; j < x.length; j++) {
-      sum += x[j] * TERMS_Y[i][j];
+      sum = Math.fma(x[j], TERMS_Y[i][j], sum);
     }
     return sum;
   }
@@ -651,7 +639,7 @@ public final class SPA {
         final double b = termCoeffs[i][v][1];
         final double c = termCoeffs[i][v][2];
 
-        lbrSum += a * cos(b + c * jme);
+        lbrSum = Math.fma(a, cos(b + c * jme), lbrSum);
       }
       lbrTerms[i] = lbrSum;
     }
