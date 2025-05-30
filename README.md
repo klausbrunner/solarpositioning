@@ -19,15 +19,13 @@ A command-line application using this library is available as [solarpos](https:/
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.3</version>
+    <version>2.0.5</version>
 </dependency>
 ```
 
 ### Requirements
 
 Java 17 or newer. No additional runtime dependencies.
-
-(Still stuck on old Java? Use version `0.1.10` of this library, which requires Java 8 only.)
 
 ### Code
 
@@ -110,10 +108,10 @@ Observatory) or at least a solid estimate.
 The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical
 values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) in 2007 and slightly updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html) in 2014.
 
-As of 2025, it appears that today's extrapolated values from this estimator are a little too high (some 2 seconds), and that gap 
+As of 2025, it appears that today's extrapolated values from this estimator are a little too high (some 2 seconds). This gap
 will widen in the coming decades (cf. [Morrison et al. 2021](https://royalsocietypublishing.org/doi/10.1098/rspa.2020.0776)). 
-Still, it should work sufficiently well for many applications.
+Still, the estimates should work sufficiently well for most applications.
 
-### Is the code thread-safe?
+### Is it thread-safe?
 
 Yes. None of the classes hold any mutable shared state.

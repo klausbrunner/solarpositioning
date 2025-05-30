@@ -297,7 +297,7 @@ public final class SPA {
               params.m));
     }
 
-    return result;
+    return Map.copyOf(result);
   }
 
   private static RiseSetParams calcRiseSetParams(
