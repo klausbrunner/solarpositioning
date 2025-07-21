@@ -1,6 +1,7 @@
 package net.e175.klaus.solarpositioning;
 
 import static java.lang.Math.*;
+import static net.e175.klaus.solarpositioning.MathUtil.*;
 
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -80,7 +81,7 @@ public final class SPA {
       final double deltaT,
       final double pressure,
       final double temperature) {
-    MathUtil.checkLatLonRange(latitude, longitude);
+    checkLatLonRange(latitude, longitude);
 
     // calculate Julian (ephemeris) date and millennium
     final JulianDate jd = new JulianDate(date, deltaT);
@@ -302,7 +303,7 @@ public final class SPA {
 
   private static RiseSetParams calcRiseSetParams(
       ZonedDateTime day, double latitude, double longitude) {
-    MathUtil.checkLatLonRange(latitude, longitude);
+    checkLatLonRange(latitude, longitude);
 
     final ZonedDateTime dayStart = startOfDayUT(day);
     final JulianDate jd = new JulianDate(dayStart, 0);
@@ -537,7 +538,7 @@ public final class SPA {
     // refraction correction.
     // 1) extremely silly values for p and t are silently ignored, disabling correction
     // 2) only apply refraction correction when the sun is visible
-    boolean doCorrect = MathUtil.checkRefractionParamsUsable(p, t) && eZeroDegrees > SUNRISE_SUNSET;
+    boolean doCorrect = checkRefractionParamsUsable(p, t) && eZeroDegrees > SUNRISE_SUNSET;
 
     if (doCorrect) {
       return 90
@@ -566,8 +567,7 @@ public final class SPA {
 
   private static double calculateTrueObliquityOfEcliptic(
       final JulianDate jd, final double deltaEpsilon) {
-    final double epsilon0 =
-        MathUtil.polynomial(jd.julianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
+    final double epsilon0 = polynomial(jd.julianEphemerisMillennium() / 10.0, OBLIQUITY_COEFFS);
     return epsilon0 / 3600 + deltaEpsilon;
   }
 
@@ -610,7 +610,7 @@ public final class SPA {
   private static double[] calculateNutationTerms(final double jce) {
     final double[] x = new double[NUTATION_COEFFS.length];
     for (int i = 0; i < x.length; i++) {
-      x[i] = MathUtil.polynomial(jce, NUTATION_COEFFS[i]);
+      x[i] = polynomial(jce, NUTATION_COEFFS[i]);
     }
     return x;
   }
@@ -619,14 +619,8 @@ public final class SPA {
     return limitTo(degrees, 360.0);
   }
 
-  private static double limitTo(final double degrees, final double max) {
-    final double dividedDegrees = degrees / max;
-    final double limited = max * (dividedDegrees - floor(dividedDegrees));
-    return (limited < 0) ? limited + max : limited;
-  }
-
   private static double calculateLBRPolynomial(final double jme, final double[] terms) {
-    return MathUtil.polynomial(jme, terms) / 1e8;
+    return polynomial(jme, terms) / 1e8;
   }
 
   private static double[] calculateLBRTerms(final double jme, final double[][][] termCoeffs) {

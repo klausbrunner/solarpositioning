@@ -115,7 +115,7 @@ public final class Grena3 {
 
     // end of "short procedure"
     final double sPhi = sin(toRadians(latitude));
-    final double cPhi = sqrt((1 - sPhi * sPhi));
+    final double cPhi = sqrt(1 - sPhi * sPhi);
     final double sDelta = sin(delta);
     final double cDelta = sqrt(1 - sDelta * sDelta);
     final double sH = sin(H);
@@ -137,7 +137,7 @@ public final class Grena3 {
 
     final double z = PI / 2 - eP - deltaRe;
 
-    return new SolarPosition(toDegrees(gamma + PI) % 360.0, toDegrees(z));
+    return new SolarPosition(MathUtil.limitTo(toDegrees(gamma + PI), 360.0), toDegrees(z));
   }
 
   private static double calcT(ZonedDateTime date) {

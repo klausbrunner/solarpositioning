@@ -26,4 +26,10 @@ final class MathUtil {
         && temperature > -273
         && temperature < 273;
   }
+
+  static double limitTo(double degrees, double max) {
+    double dividedDegrees = degrees / max;
+    double limited = max * (dividedDegrees - Math.floor(dividedDegrees));
+    return (limited < 0) ? limited + max : limited;
+  }
 }

@@ -31,10 +31,7 @@ public record JulianDate(double julianDate, double deltaT) {
    *     For the years 2023–2028, a reasonably accurate default would be 69.
    */
   public JulianDate(final ZonedDateTime date, final double deltaT) {
-    this(
-        calcJulianDate(
-            createUtcDateTime(date).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()),
-        deltaT);
+    this(calcJulianDate(createUtcDateTime(date).toLocalDateTime()), deltaT);
   }
 
   static ZonedDateTime createUtcDateTime(final ZonedDateTime fromDateTime) {
