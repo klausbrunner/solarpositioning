@@ -243,17 +243,7 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final Horizon horizon) {
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
-
-    return calcRiseAndSet(
-        day,
-        longitude,
-        deltaT,
-        horizon.elevation(),
-        toRadians(latitude),
-        params.nuDegrees,
-        params.alphaDeltas,
-        params.m);
+    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, horizon.elevation());
   }
 
   /**
