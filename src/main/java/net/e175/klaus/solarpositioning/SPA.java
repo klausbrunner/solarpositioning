@@ -243,17 +243,7 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final Horizon horizon) {
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
-
-    return calcRiseAndSet(
-        day,
-        longitude,
-        deltaT,
-        horizon,
-        toRadians(latitude),
-        params.nuDegrees,
-        params.alphaDeltas,
-        params.m);
+    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, horizon.elevation());
   }
 
   /**
@@ -291,7 +281,89 @@ public final class SPA {
               day,
               longitude,
               deltaT,
-              horizon,
+              horizon.elevation(),
+              toRadians(latitude),
+              params.nuDegrees,
+              params.alphaDeltas,
+              params.m));
+    }
+
+    return Map.copyOf(result);
+  }
+
+  /**
+   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and custom
+   * elevation angle.
+   *
+   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
+   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param latitude Observer's latitude, in degrees (negative south of equator).
+   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
+   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
+   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
+   *     and {@link DeltaT}.
+   * @param elevationAngle Elevation angle in degrees to use as the sunrise/sunset definition.
+   *     Negative values are below the horizon. For reference: standard sunrise/sunset uses
+   *     approximately -0.833°, civil twilight uses -6°, nautical -12°, astronomical -18°.
+   * @throws IllegalArgumentException for nonsensical latitude/longitude
+   * @return An implementation of {@link SunriseResult} depending on the type of day.
+   */
+  public static SunriseResult calculateSunriseTransitSet(
+      final ZonedDateTime day,
+      final double latitude,
+      final double longitude,
+      final double deltaT,
+      final double elevationAngle) {
+    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
+
+    return calcRiseAndSet(
+        day,
+        longitude,
+        deltaT,
+        elevationAngle,
+        toRadians(latitude),
+        params.nuDegrees,
+        params.alphaDeltas,
+        params.m);
+  }
+
+  /**
+   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and custom
+   * elevation angles. This is useful to get results for multiple custom elevation angles in one
+   * call and is expected to be faster than separate calls.
+   *
+   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
+   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param latitude Observer's latitude, in degrees (negative south of equator).
+   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
+   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
+   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
+   *     and {@link DeltaT}.
+   * @param elevationAngles Elevation angles in degrees to use as the sunrise/sunset definition.
+   *     Negative values are below the horizon. For reference: standard sunrise/sunset uses
+   *     approximately -0.833°, civil twilight uses -6°, nautical -12°, astronomical -18°.
+   * @return A Map with one key-value pair for each unique elevation angle and {@link
+   *     SunriseResult}. This map may or may not be mutable.
+   * @throws IllegalArgumentException for nonsensical latitude/longitude
+   */
+  public static Map<Double, SunriseResult> calculateSunriseTransitSet(
+      final ZonedDateTime day,
+      final double latitude,
+      final double longitude,
+      final double deltaT,
+      final double... elevationAngles) {
+
+    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
+    final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
+
+    for (double elevationAngle : elevationAngles) {
+      result.put(
+          elevationAngle,
+          calcRiseAndSet(
+              day,
+              longitude,
+              deltaT,
+              elevationAngle,
               toRadians(latitude),
               params.nuDegrees,
               params.alphaDeltas,
@@ -339,14 +411,14 @@ public final class SPA {
       ZonedDateTime day,
       double longitude,
       double deltaT,
-      Horizon horizon,
+      double elevationAngle,
       double phi,
       double nuDegrees,
       AlphaDelta[] alphaDeltas,
       double[] m) {
     // A.2.4. Calculate the local hour angle H0 corresponding to ...
     final double acosArg =
-        (sin(toRadians(horizon.elevation())) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
+        (sin(toRadians(elevationAngle)) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
             / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
 
     final Type type =
@@ -420,7 +492,7 @@ public final class SPA {
     // A.2.14. Calculate the sunrise, R (in fraction of day)
     final double r =
         m[1]
-            + (h[1] - horizon.elevation())
+            + (h[1] - elevationAngle)
                 / (360.0
                     * cos(toRadians(alphaDeltaPrimes[1].delta))
                     * cos(phi)
@@ -429,7 +501,7 @@ public final class SPA {
     // A.2.15. Calculate the sunset, S (in fraction of day)
     final double s =
         m[2]
-            + (h[2] - horizon.elevation())
+            + (h[2] - elevationAngle)
                 / (360.0
                     * cos(toRadians(alphaDeltaPrimes[2].delta))
                     * cos(phi)

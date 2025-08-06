@@ -46,6 +46,31 @@ class SPASunriseTransitSetTest {
   }
 
   @Test
+  void acceptsCustomElevationAngles() {
+    ZonedDateTime day = ZonedDateTime.parse("2023-06-21T12:00:00Z");
+    double latitude = 48.8566;
+    double longitude = 2.3522;
+    double deltaT = 0.0;
+
+    SunriseResult customResult =
+        SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -6.5);
+    assertThat(customResult).isNotNull();
+
+    SunriseResult enumResult =
+        SPA.calculateSunriseTransitSet(
+            day, latitude, longitude, deltaT, SPA.Horizon.ASTRONOMICAL_TWILIGHT);
+    SunriseResult doubleResult =
+        SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -18.0);
+    assertThat(enumResult).isEqualTo(doubleResult);
+
+    Map<Double, SunriseResult> multiCustom =
+        SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -5.0, -10.0, -15.0);
+    assertThat(multiCustom).hasSize(3);
+    assertThat(multiCustom.keySet()).containsExactlyInAnyOrder(-5.0, -10.0, -15.0);
+    multiCustom.values().forEach(result -> assertThat(result).isNotNull());
+  }
+
+  @Test
   void rejectsNullValuesInResultRecords() {
     assertThrows(NullPointerException.class, () -> new SunriseResult.AllDay(null));
     assertThrows(NullPointerException.class, () -> new SunriseResult.AllNight(null));
