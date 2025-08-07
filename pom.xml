@@ -43,29 +43,11 @@
         <basepom.check.skip-license>true</basepom.check.skip-license>
         <basepom.check.skip-checkstyle>true</basepom.check.skip-checkstyle>
         <basepom.check.skip-dependency>true</basepom.check.skip-dependency>
+        <basepom.javadoc.skip>false</basepom.javadoc.skip>
 
-        <basepom.release.profiles>basepom.central-release</basepom.release.profiles>
-        <scmCommentPrefix>build: [maven-release-plugin] [skip ci]</scmCommentPrefix>
-        <basepom.release.tag-name-format>v@{project.version}</basepom.release.tag-name-format>
-
-        <basepom.nexus-staging.staging-url>https://oss.sonatype.org/</basepom.nexus-staging.staging-url>
-        <basepom.nexus-staging.release-after-close>true</basepom.nexus-staging.release-after-close>
     </properties>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.sonatype.central</groupId>
-                    <artifactId>central-publishing-maven-plugin</artifactId>
-                    <version>0.8.0</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <autoPublish>true</autoPublish>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
 
         <plugins>
             <plugin>
@@ -124,6 +106,41 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.jreleaser</groupId>
+                <artifactId>jreleaser-maven-plugin</artifactId>
+                <version>1.19.0</version>
+                <configuration>
+                    <jreleaser>
+                        <release>
+                            <github>
+                                <overwrite>true</overwrite>
+                                <changelog>
+                                    <formatted>ALWAYS</formatted>
+                                    <preset>conventional-commits</preset>
+                                </changelog>
+                            </github>
+                        </release>
+                        <deploy>
+                            <maven>
+                                <mavenCentral>
+                                    <release-deploy>
+                                        <active>ALWAYS</active>
+                                        <url>https://central.sonatype.com/api/v1/publisher</url>
+                                        <stagingRepositories>
+                                            <stagingRepository>target/staging-deploy</stagingRepository>
+                                        </stagingRepositories>
+                                    </release-deploy>
+                                </mavenCentral>
+                            </maven>
+                        </deploy>
+                        <signing>
+                            <active>ALWAYS</active>
+                            <armored>true</armored>
+                        </signing>
+                    </jreleaser>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -142,57 +159,4 @@
         </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>basepom.central-release</id>
-            <properties>
-                <!-- tests have been run in the preparation step of the release -->
-                <basepom.test.skip>true</basepom.test.skip>
-                <basepom.it.skip>true</basepom.it.skip>
-
-                <!-- checks have been run in the preparation step of the release -->
-                <basepom.check.skip-all>true</basepom.check.skip-all>
-
-                <!-- oss requires a javadoc jar. Build one when releasing. -->
-                <basepom.javadoc.skip>false</basepom.javadoc.skip>
-
-                <!-- skip the deploy plugin, this is using the nexus OSS plugin -->
-                <basepom.deploy.skip>true</basepom.deploy.skip>
-
-                <!-- do not use the nexus oss plugin -->
-                <basepom.nexus-staging.skip>true</basepom.nexus-staging.skip>
-            </properties>
-            <build>
-                <plugins>
-                    <!-- Sign artifacts using gpg for oss upload -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>basepom.release.default</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.central</groupId>
-                        <artifactId>central-publishing-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>basepom.release.default</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>publish</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
