@@ -17,7 +17,7 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.5</version>
+    <version>2.0.7</version>
 </dependency>
 ```
 
@@ -74,6 +74,18 @@ var result=SPA.calculateSunriseTransitSet(
         SPA.Horizon.CIVIL_TWILIGHT); 
 ```
 
+For bulk position processing at a fixed time with many coordinates using SPA, use the optimized split methods for significantly better performance:
+
+```java
+// Compute time-dependent parts once
+final var timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
+
+// Reuse for multiple coordinates (up to 10x faster)
+for(var coordinate: coordinates) {
+    var position = SPA.calculateSolarPositionWithTimeDependentParts(
+        dateTime, coordinate.lat, coordinate.lon, coordinate.elevation, timeDependent);
+}
+```
 See the Javadoc for more methods.
 
 ### Which position algorithm should I use?
@@ -81,8 +93,10 @@ See the Javadoc for more methods.
 * For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from
   2010 to 2110 CE.
 * If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
-  reference algorithm for solar positioning, being very accurate and usable in a very large time window. Its only
-  downside is that it's relatively slow.
+  reference algorithm for solar positioning, being very accurate and usable in a very large time window.
+
+While Grena3 is about an order of magnitude faster than SPA, in absolute terms we are talking about microseconds. The difference
+mostly matters for bulk calculations.
 
 ### Notes on sunrise, sunset, and twilight
 
