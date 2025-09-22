@@ -9,8 +9,6 @@ well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
 included to validate against the reference code and other sources.
 
-A command-line application using this library is available as [solarpos](https://github.com/klausbrunner/solarpos).
-
 ## Usage
 
 ### Maven coordinates
