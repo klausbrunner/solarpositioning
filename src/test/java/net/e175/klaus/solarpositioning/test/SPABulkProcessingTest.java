@@ -37,7 +37,7 @@ class SPABulkProcessingTest {
     SPA.SpaTimeDependent timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
     SolarPosition optimized =
         SPA.calculateSolarPositionWithTimeDependentParts(
-            dateTime, latitude, longitude, elevation, pressure, temperature, timeDependent);
+            latitude, longitude, elevation, pressure, temperature, timeDependent);
 
     assertThat(optimized.azimuth()).isCloseTo(traditional.azimuth(), within(TOLERANCE));
     assertThat(optimized.zenithAngle()).isCloseTo(traditional.zenithAngle(), within(TOLERANCE));
@@ -60,7 +60,7 @@ class SPABulkProcessingTest {
     SPA.SpaTimeDependent timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
     SolarPosition optimized =
         SPA.calculateSolarPositionWithTimeDependentParts(
-            dateTime, latitude, longitude, elevation, timeDependent);
+            latitude, longitude, elevation, timeDependent);
 
     assertThat(optimized.azimuth()).isCloseTo(traditional.azimuth(), within(TOLERANCE));
     assertThat(optimized.zenithAngle()).isCloseTo(traditional.zenithAngle(), within(TOLERANCE));
@@ -95,7 +95,7 @@ class SPABulkProcessingTest {
       // Calculate optimized way
       SolarPosition optimized =
           SPA.calculateSolarPositionWithTimeDependentParts(
-              dateTime, coord.latitude, coord.longitude, coord.elevation, timeDependent);
+              coord.latitude, coord.longitude, coord.elevation, timeDependent);
 
       assertThat(optimized.azimuth())
           .as("Azimuth for lat=%f, lon=%f", coord.latitude, coord.longitude)
@@ -131,7 +131,7 @@ class SPABulkProcessingTest {
       // Calculate optimized way
       SolarPosition optimized =
           SPA.calculateSolarPositionWithTimeDependentParts(
-              dateTime, latitude, longitude, elevation, pressure, temperature, timeDependent);
+              latitude, longitude, elevation, pressure, temperature, timeDependent);
 
       assertThat(optimized.azimuth())
           .as("Azimuth for random coordinate #%d", i)
@@ -168,8 +168,7 @@ class SPABulkProcessingTest {
 
       // Calculate using recycled time-dependent parts
       SolarPosition optimized =
-          SPA.calculateSolarPositionWithTimeDependentParts(
-              dateTime, lat, lon, elevation, timeDependent);
+          SPA.calculateSolarPositionWithTimeDependentParts(lat, lon, elevation, timeDependent);
 
       assertThat(optimized.azimuth())
           .as("Azimuth for coordinate lat=%f, lon=%f", lat, lon)
@@ -215,7 +214,7 @@ class SPABulkProcessingTest {
     SPA.SpaTimeDependent timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
     for (Coordinate coord : coordinates) {
       SPA.calculateSolarPositionWithTimeDependentParts(
-          dateTime, coord.latitude, coord.longitude, coord.elevation, timeDependent);
+          coord.latitude, coord.longitude, coord.elevation, timeDependent);
     }
     long optimizedTime = System.nanoTime() - startOptimized;
 
@@ -246,7 +245,7 @@ class SPABulkProcessingTest {
         SPA.calculateSolarPosition(dateTime, latitude, longitude, elevation, deltaT);
     SolarPosition optimized =
         SPA.calculateSolarPositionWithTimeDependentParts(
-            dateTime, latitude, longitude, elevation, timeDependent);
+            latitude, longitude, elevation, timeDependent);
 
     assertThat(optimized.azimuth()).isCloseTo(traditional.azimuth(), within(TOLERANCE));
     assertThat(optimized.zenithAngle()).isCloseTo(traditional.zenithAngle(), within(TOLERANCE));
@@ -256,7 +255,7 @@ class SPABulkProcessingTest {
     traditional = SPA.calculateSolarPosition(dateTime, latitude, longitude, elevation, deltaT);
     optimized =
         SPA.calculateSolarPositionWithTimeDependentParts(
-            dateTime, latitude, longitude, elevation, timeDependent);
+            latitude, longitude, elevation, timeDependent);
 
     assertThat(optimized.azimuth()).isCloseTo(traditional.azimuth(), within(TOLERANCE));
     assertThat(optimized.zenithAngle()).isCloseTo(traditional.zenithAngle(), within(TOLERANCE));

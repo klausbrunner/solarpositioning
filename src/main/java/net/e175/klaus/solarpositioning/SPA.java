@@ -67,7 +67,8 @@ public final class SPA {
   /**
    * Calculate time-dependent parts of the SPA algorithm (steps 1-11). These calculations depend
    * only on the date/time and can be computed once for bulk processing at a fixed time with varying
-   * coordinates.
+   * coordinates. Use with {@link #calculateSolarPositionWithTimeDependentParts} for significant
+   * performance improvements when calculating positions for multiple coordinates at the same time.
    *
    * @param date Observer's local date and time.
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
@@ -85,11 +86,11 @@ public final class SPA {
 
     // calculate Earth heliocentric longitude, L
     final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
-    final double lDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, lTerms)));
+    final double lDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, lTerms)), 360);
 
     // calculate Earth heliocentric latitude, B
     final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-    final double bDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, bTerms)));
+    final double bDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, bTerms)), 360);
 
     // calculate Earth radius vector, R
     final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
@@ -97,7 +98,7 @@ public final class SPA {
     assert r != 0;
 
     // calculate geocentric longitude, theta
-    final double thetaDegrees = limitDegreesTo360(lDegrees + 180);
+    final double thetaDegrees = limitTo(lDegrees + 180, 360);
     // calculate geocentric latitude, beta
     final double betaDegrees = -bDegrees;
     final double beta = toRadians(betaDegrees);
@@ -146,7 +147,6 @@ public final class SPA {
    * #calculateSpaTimeDependentParts}. Used together, these provide significant speedup for
    * coordinate sweeps at fixed time.
    *
-   * @param date Observer's local date and time (must match the date used for timeDependent).
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param elevation Observer's elevation, in meters.
@@ -161,7 +161,6 @@ public final class SPA {
    * @see SolarPosition
    */
   public static SolarPosition calculateSolarPositionWithTimeDependentParts(
-      final ZonedDateTime date,
       final double latitude,
       final double longitude,
       final double elevation,
@@ -176,7 +175,7 @@ public final class SPA {
     final double deltaDegrees = timeDependent.deltaDegrees;
 
     // Calculate observer local hour angle
-    final double hDegrees = limitDegreesTo360(timeDependent.nuDegrees + longitude - alphaDegrees);
+    final double hDegrees = limitTo(timeDependent.nuDegrees + longitude - alphaDegrees, 360);
     final double h = toRadians(hDegrees);
 
     // Calculate the topocentric sun right ascension and sun declination
@@ -234,14 +233,13 @@ public final class SPA {
       final double temperature) {
     final SpaTimeDependent timeDependent = calculateSpaTimeDependentParts(date, deltaT);
     return calculateSolarPositionWithTimeDependentParts(
-        date, latitude, longitude, elevation, pressure, temperature, timeDependent);
+        latitude, longitude, elevation, pressure, temperature, timeDependent);
   }
 
   /**
    * Calculate topocentric solar position using pre-computed time-dependent parts. This method does
    * not perform refraction correction.
    *
-   * @param date Observer's local date and time (must match the date used for timeDependent).
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param elevation Observer's elevation, in meters.
@@ -252,13 +250,12 @@ public final class SPA {
    * @see SolarPosition
    */
   public static SolarPosition calculateSolarPositionWithTimeDependentParts(
-      final ZonedDateTime date,
       final double latitude,
       final double longitude,
       final double elevation,
       final SpaTimeDependent timeDependent) {
     return calculateSolarPositionWithTimeDependentParts(
-        date, latitude, longitude, elevation, Double.NaN, Double.NaN, timeDependent);
+        latitude, longitude, elevation, Double.NaN, Double.NaN, timeDependent);
   }
 
   /**
@@ -647,7 +644,7 @@ public final class SPA {
       double jme, double deltaPsi, double epsilonDegrees) {
     // calculate Earth heliocentric latitude, B
     final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-    final double bDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, bTerms)));
+    final double bDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, bTerms)), 360);
 
     // calculate Earth radius vector, R
     final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
@@ -656,10 +653,10 @@ public final class SPA {
 
     // calculate Earth heliocentric longitude, L
     final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
-    final double lDegrees = limitDegreesTo360(toDegrees(calculateLBRPolynomial(jme, lTerms)));
+    final double lDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, lTerms)), 360);
 
     // calculate geocentric longitude, theta
-    final double thetaDegrees = limitDegreesTo360(lDegrees + 180);
+    final double thetaDegrees = limitTo(lDegrees + 180, 360);
 
     // calculate geocentric latitude, beta
     final double betaDegrees = -bDegrees;
@@ -701,8 +698,8 @@ public final class SPA {
 
     // Calculate the topocentric azimuth angle
     final double gamma = atan2(sin(hPrime), cosHPrime * sinPhi - tan(deltaPrime) * cosPhi);
-    final double gammaDegrees = limitDegreesTo360(toDegrees(gamma));
-    final double topocentricAzimuthAngle = limitDegreesTo360(gammaDegrees + 180);
+    final double gammaDegrees = limitTo(toDegrees(gamma), 360);
+    final double topocentricAzimuthAngle = limitTo(gammaDegrees + 180, 360);
 
     return new SolarPosition(topocentricAzimuthAngle, topocentricZenithAngle);
   }
@@ -737,7 +734,7 @@ public final class SPA {
     final double alpha =
         atan2(sin(lambdaRad) * cos(epsilonRad) - tan(betaRad) * sin(epsilonRad), cos(lambdaRad));
 
-    return limitDegreesTo360(toDegrees(alpha));
+    return limitTo(toDegrees(alpha), 360);
   }
 
   private static double calculateTrueObliquityOfEcliptic(
@@ -749,10 +746,11 @@ public final class SPA {
   private static double calculateApparentSiderealTimeAtGreenwich(
       final JulianDate jd, final double deltaPsi, final double epsilonDegrees) {
     final double nu0degrees =
-        limitDegreesTo360(
+        limitTo(
             280.46061837
                 + 360.98564736629 * (jd.julianDate() - 2451545)
-                + pow(jd.julianCentury(), 2) * (0.000387933 - jd.julianCentury() / 38710000));
+                + pow(jd.julianCentury(), 2) * (0.000387933 - jd.julianCentury() / 38710000),
+            360);
 
     return nu0degrees + deltaPsi * cos(toRadians(epsilonDegrees));
   }
@@ -788,10 +786,6 @@ public final class SPA {
       x[i] = polynomial(jce, NUTATION_COEFFS[i]);
     }
     return x;
-  }
-
-  private static double limitDegreesTo360(final double degrees) {
-    return limitTo(degrees, 360.0);
   }
 
   private static double calculateLBRPolynomial(final double jme, final double[] terms) {

@@ -17,7 +17,7 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.0.8</version>
+    <version>2.0.9</version>
 </dependency>
 ```
 
@@ -83,7 +83,7 @@ final var timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
 // Reuse for multiple coordinates (up to 10x faster)
 for(var coordinate: coordinates) {
     var position = SPA.calculateSolarPositionWithTimeDependentParts(
-        dateTime, coordinate.lat, coordinate.lon, coordinate.elevation, timeDependent);
+        coordinate.lat, coordinate.lon, coordinate.elevation, timeDependent);
 }
 ```
 See the Javadoc for more methods.

@@ -118,6 +118,9 @@
                                 <changelog>
                                     <formatted>ALWAYS</formatted>
                                     <preset>conventional-commits</preset>
+                                    <contributors>
+                                        <enabled>false</enabled>
+                                    </contributors>
                                 </changelog>
                             </github>
                         </release>
