@@ -108,7 +108,7 @@ mostly matters for bulk calculations.
   nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator,
   i.e. values for polar regions are much less reliable.
 * The SPA sunset/sunrise algorithm is one of the most accurate ones around. Results of this implementation correspond
-  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s.
+  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s. Also see a [comparison with some other Java sunrise libraries](https://klaus.brunners.name/posts/sunrise-libs-comparison/).
 
 ### What's this "delta T" thing?
 
@@ -120,7 +120,7 @@ Observatory) or at least a solid estimate.
 The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical
 values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) in 2007 and slightly updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html) in 2014.
 
-As of 2025, it appears that today's extrapolated values from this estimator are a little too high (some 2 seconds). This gap
+As of 2025, it appears that today's extrapolated values from this estimator are a little high (some 2 seconds). This gap
 will widen in the coming decades (cf. [Morrison et al. 2021](https://royalsocietypublishing.org/doi/10.1098/rspa.2020.0776)). 
 Still, the estimates should work sufficiently well for most applications.
 
