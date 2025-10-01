@@ -71,6 +71,24 @@ class SPASunriseTransitSetTest {
   }
 
   @Test
+  void rejectsInvalidElevationAngles() {
+    ZonedDateTime day = ZonedDateTime.parse("2023-06-21T12:00:00Z");
+    double latitude = 48.8566;
+    double longitude = 2.3522;
+    double deltaT = 0.0;
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -31.0));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, 11.0));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, 1000.0));
+  }
+
+  @Test
   void rejectsNullValuesInResultRecords() {
     assertThrows(NullPointerException.class, () -> new SunriseResult.AllDay(null));
     assertThrows(NullPointerException.class, () -> new SunriseResult.AllNight(null));

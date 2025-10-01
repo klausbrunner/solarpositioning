@@ -18,6 +18,12 @@ final class MathUtil {
     }
   }
 
+  static void checkElevationAngle(double elevationAngle) {
+    if (elevationAngle < -30.0 || elevationAngle > 10.0) {
+      throw new IllegalArgumentException("elevation angle out of reasonable range [-30, 10]");
+    }
+  }
+
   static boolean checkRefractionParamsUsable(double pressure, double temperature) {
     return Double.isFinite(pressure)
         && Double.isFinite(temperature)

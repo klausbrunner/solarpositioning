@@ -414,6 +414,7 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final double elevationAngle) {
+    checkElevationAngle(elevationAngle);
     final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
 
     return calcRiseAndSet(
