@@ -105,13 +105,22 @@ mostly matters for bulk calculations.
 
 * Calculation is based on the usual correction of 0.833° on the zenith angle, i.e. sunrise and sunset are assumed to
   occur when the center of the solar disc is 50 arc-minutes below the horizon. While commonly used, this fixed value
-  fails to account for the varying effects of atmospheric refraction. Calculated and apparent sunrise and sunset times
+  fails to account for the varying effects of atmospheric refraction. Calculated and observed sunrise and sunset times
   may easily differ by several minutes (cf. [Wilson 2018](https://doi.org/10.37099/mtu.dc.etdr/697)).
 * As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the
   nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator,
   i.e. values for polar regions are much less reliable.
 * The SPA sunset/sunrise algorithm is one of the most accurate ones around. Results of this implementation correspond
   very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s. Also see a [comparison with some other Java sunrise libraries](https://klaus.brunners.name/posts/sunrise-libs-comparison/).
+
+#### Divergence from the NREL SPA reference code
+
+The library follows the procedure in the SPA paper: sidereal time is evaluated at 0 **UT** (A.2.1)
+while the geocentric α/δ for sunrise/sunset interpolation are evaluated at 0 **TT** for D−1/D/D+1 (A.2.2). The NREL
+reference code (`spa.c`) resets ΔT to zero when building those intermediate ephemerides, effectively keeping
+them in UT. This Java code preserves the supplied ΔT to stay faithful to the published algorithm rather than the
+C code. As a consequence, sunrise/sunset times differ slightly from `spa.c` but should line up better with
+high-precision ephemerides (JPL Horizons, USNO almanacs, etc.).
 
 ### What's this "delta T" thing?
 

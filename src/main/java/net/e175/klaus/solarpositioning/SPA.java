@@ -371,7 +371,7 @@ public final class SPA {
       final double deltaT,
       final Horizon... horizons) {
 
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
+    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
     final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
 
     for (Horizon horizon : horizons) {
@@ -415,7 +415,7 @@ public final class SPA {
       final double deltaT,
       final double elevationAngle) {
     checkElevationAngle(elevationAngle);
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
+    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
 
     return calcRiseAndSet(
         day,
@@ -454,7 +454,7 @@ public final class SPA {
       final double deltaT,
       final double... elevationAngles) {
 
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude);
+    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
     final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
 
     for (double elevationAngle : elevationAngles) {
@@ -475,11 +475,11 @@ public final class SPA {
   }
 
   private static RiseSetParams calcRiseSetParams(
-      ZonedDateTime day, double latitude, double longitude) {
+      ZonedDateTime day, double latitude, double longitude, double deltaT) {
     checkLatLonRange(latitude, longitude);
 
     final ZonedDateTime dayStart = startOfDayUT(day);
-    final JulianDate jd = new JulianDate(dayStart, 0);
+    final JulianDate jd = new JulianDate(dayStart, deltaT);
 
     // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
     final double jce = jd.julianEphemerisCentury();
@@ -495,7 +495,7 @@ public final class SPA {
     // day, next day
     final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
     for (int i = 0; i < alphaDeltas.length; i++) {
-      JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, 0);
+      JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, deltaT);
       double currentJme = currentJd.julianEphemerisMillennium();
       AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
       alphaDeltas[i] = ad;

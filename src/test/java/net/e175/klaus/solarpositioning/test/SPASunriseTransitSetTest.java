@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 
 class SPASunriseTransitSetTest {
 
-  private static final TemporalUnitOffset REASONABLE_TOLERANCE = within(40, ChronoUnit.SECONDS);
+  private static final TemporalUnitOffset REASONABLE_TOLERANCE = within(35, ChronoUnit.SECONDS);
   private static final TemporalUnitOffset STRICT_TOLERANCE = within(1, ChronoUnit.SECONDS);
 
   private static void compare(
