@@ -303,8 +303,8 @@ public final class SPA {
    * calculation is based on the astronomical definition of sunrise and sunset, using a refraction
    * correction of -0.8333°.
    *
-   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
-   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
+   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
@@ -325,8 +325,8 @@ public final class SPA {
    * definition of sunrise or sunset can be chosen based on a horizon type (defined via its
    * elevation angle).
    *
-   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
-   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
+   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
@@ -351,8 +351,8 @@ public final class SPA {
    * horizon types. This is useful to get sunrise/sunset and multiple twilight times in one call and
    * is expected to be faster than separate calls.
    *
-   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
-   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
+   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
@@ -395,8 +395,8 @@ public final class SPA {
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and custom
    * elevation angle.
    *
-   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
-   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
+   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
@@ -433,8 +433,8 @@ public final class SPA {
    * elevation angles. This is useful to get results for multiple custom elevation angles in one
    * call and is expected to be faster than separate calls.
    *
-   * @param day GregorianCalendar of day for which sunrise/transit/sunset are to be calculated. The
-   *     time of day (hour, minute, second, millisecond) is ignored.
+   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
+   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
    * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
    * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
