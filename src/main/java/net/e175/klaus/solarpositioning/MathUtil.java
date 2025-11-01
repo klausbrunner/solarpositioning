@@ -13,14 +13,19 @@ final class MathUtil {
   }
 
   static void checkLatLonRange(double latitude, double longitude) {
-    if (latitude < -90.0 || latitude > 90.0 || longitude < -180.0 || longitude > 180.0) {
+    if (!Double.isFinite(latitude)
+        || !Double.isFinite(longitude)
+        || latitude < -90.0
+        || latitude > 90.0
+        || longitude < -180.0
+        || longitude > 180.0) {
       throw new IllegalArgumentException("latitude/longitude out of range");
     }
   }
 
   static void checkElevationAngle(double elevationAngle) {
-    if (elevationAngle < -30.0 || elevationAngle > 10.0) {
-      throw new IllegalArgumentException("elevation angle out of reasonable range [-30, 10]");
+    if (!Double.isFinite(elevationAngle) || elevationAngle < -90.0 || elevationAngle > 90.0) {
+      throw new IllegalArgumentException("elevation angle out of range [-90, 90]");
     }
   }
 

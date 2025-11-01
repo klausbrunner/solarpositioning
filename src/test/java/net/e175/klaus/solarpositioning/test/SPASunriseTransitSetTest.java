@@ -79,10 +79,10 @@ class SPASunriseTransitSetTest {
 
     assertThrows(
         IllegalArgumentException.class,
-        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -31.0));
+        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, -91.0));
     assertThrows(
         IllegalArgumentException.class,
-        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, 11.0));
+        () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, 91.0));
     assertThrows(
         IllegalArgumentException.class,
         () -> SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, 1000.0));

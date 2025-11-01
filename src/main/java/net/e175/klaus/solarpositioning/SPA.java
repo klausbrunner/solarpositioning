@@ -375,6 +375,7 @@ public final class SPA {
     final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
 
     for (Horizon horizon : horizons) {
+      checkElevationAngle(horizon.elevation());
       result.put(
           horizon,
           calcRiseAndSet(
@@ -458,6 +459,7 @@ public final class SPA {
     final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
 
     for (double elevationAngle : elevationAngles) {
+      checkElevationAngle(elevationAngle);
       result.put(
           elevationAngle,
           calcRiseAndSet(
