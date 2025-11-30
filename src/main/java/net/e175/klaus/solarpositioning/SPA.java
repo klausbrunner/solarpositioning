@@ -33,15 +33,7 @@ public final class SPA {
    * on the datetime and can be computed once and reused for multiple coordinates.
    */
   public record SpaTimeDependent(
-      double thetaDegrees,
-      double betaDegrees,
-      double r,
-      double deltaPsi,
-      double epsilonDegrees,
-      double lambdaDegrees,
-      double nuDegrees,
-      double alphaDegrees,
-      double deltaDegrees) {}
+      double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
 
   /**
    * Predefined elevation angles to use in sunrise-sunset calculation. This allows to get twilight
@@ -129,16 +121,7 @@ public final class SPA {
     // Calculate geocentric sun declination
     final double deltaDegrees = toDegrees(calculateGeocentricSunDeclination(beta, epsilon, lambda));
 
-    return new SpaTimeDependent(
-        thetaDegrees,
-        betaDegrees,
-        r,
-        deltaPsiEpsilon.deltaPsi,
-        epsilonDegrees,
-        lambdaDegrees,
-        nuDegrees,
-        alphaDegrees,
-        deltaDegrees);
+    return new SpaTimeDependent(r, nuDegrees, alphaDegrees, deltaDegrees);
   }
 
   /**
@@ -184,7 +167,7 @@ public final class SPA {
     final double phi = toRadians(latitude);
     final double delta = toRadians(deltaDegrees);
     final double u = atan(0.99664719 * tan(phi));
-    final double x = cos(u) + elevation * cos(phi) / 6378140;
+    final double x = cos(u) + (elevation * cos(phi)) / 6378140;
     final double y = 0.99664719 * sin(u) + (elevation * sin(phi)) / 6378140;
 
     final double x1 = cos(delta) - x * sin(xi) * cos(h);
@@ -293,7 +276,7 @@ public final class SPA {
   private enum Type {
     NORMAL,
     ALL_DAY,
-    ALL_NIGHT
+    ALL_NIGHT,
   }
 
   private record AlphaDelta(double alpha, double delta) {}
@@ -370,7 +353,6 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final Horizon... horizons) {
-
     final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
     final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
 
@@ -454,7 +436,6 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final double... elevationAngles) {
-
     final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
     final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
 
@@ -527,28 +508,30 @@ public final class SPA {
     final Type type =
         acosArg < -1.0 ? Type.ALL_DAY : (acosArg > 1.0 ? Type.ALL_NIGHT : Type.NORMAL);
 
-    final double h0 = acos(acosArg);
+    if (type == Type.NORMAL) {
+      final double h0 = acos(acosArg);
+      final double h0Degrees = limitTo(toDegrees(h0), 180.0);
 
-    final double h0Degrees = limitTo(toDegrees(h0), 180.0);
+      // A.2.5. Calculate the approximate sunrise time, m1, in fraction of day,
+      m[1] = limitTo(m[0] - h0Degrees / 360.0, 1);
 
-    // A.2.5. Calculate the approximate sunrise time, m1, in fraction of day,
-    m[1] = limitTo(m[0] - h0Degrees / 360.0, 1);
-
-    // A.2.6. Calculate the approximate sunset time, m2, in fraction of day,
-    m[2] = limitTo(m[0] + h0Degrees / 360.0, 1);
+      // A.2.6. Calculate the approximate sunset time, m2, in fraction of day,
+      m[2] = limitTo(m[0] + h0Degrees / 360.0, 1);
+    }
 
     m[0] = limitTo(m[0], 1);
 
     // A.2.8. Calculate the sidereal time at Greenwich, in degrees, for the sun transit, sunrise,
     // and sunset
-    final double[] nu = new double[3];
-    for (int i = 0; i < m.length; i++) {
+    final int count = (type == Type.NORMAL) ? m.length : 1;
+    final double[] nu = new double[count];
+    for (int i = 0; i < count; i++) {
       nu[i] = nuDegrees + 360.985647 * m[i];
     }
 
     // A.2.9. Calculate the terms ni
-    final double[] n = new double[3];
-    for (int i = 0; i < m.length; i++) {
+    final double[] n = new double[count];
+    for (int i = 0; i < count; i++) {
       n[i] = m[i] + deltaT / 86400.0;
     }
 
@@ -562,7 +545,7 @@ public final class SPA {
     final double c = b - a;
     final double cPrime = bPrime - aPrime;
 
-    final AlphaDelta[] alphaDeltaPrimes = new AlphaDelta[3];
+    final AlphaDelta[] alphaDeltaPrimes = new AlphaDelta[count];
     for (int i = 0; i < alphaDeltaPrimes.length; i++) {
       double alphaPrimeI = alphaDeltas[1].alpha + (n[i] * (a + b + c * n[i])) / 2.0;
       double deltaPrimeI = alphaDeltas[1].delta + (n[i] * (aPrime + bPrime + cPrime * n[i])) / 2.0;
@@ -571,14 +554,14 @@ public final class SPA {
     }
 
     // A.2.11. Calculate the local hour angle for the sun transit, sunrise, and sunset
-    final double[] hPrime = new double[3];
+    final double[] hPrime = new double[count];
     for (int i = 0; i < hPrime.length; i++) {
       double hPrimeI = nu[i] + longitude - alphaDeltaPrimes[i].alpha;
       hPrime[i] = limitHprime(hPrimeI);
     }
 
     // A.2.12. Calculate the sun altitude for the sun transit, sunrise, and sunset, hi
-    final double[] h = new double[3];
+    final double[] h = new double[count];
     for (int i = 0; i < h.length; i++) {
       double deltaPrimeRad = toRadians(alphaDeltaPrimes[i].delta);
 
@@ -591,6 +574,12 @@ public final class SPA {
 
     // A.2.13. Calculate the sun transit, T (in fraction of day)
     final double t = m[0] - hPrime[0] / 360.0;
+
+    if (type != Type.NORMAL) {
+      return (type == Type.ALL_DAY)
+          ? new SunriseResult.AllDay(addFractionOfDay(day, t))
+          : new SunriseResult.AllNight(addFractionOfDay(day, t));
+    }
 
     // A.2.14. Calculate the sunrise, R (in fraction of day)
     final double r =
@@ -716,12 +705,10 @@ public final class SPA {
     boolean doCorrect = checkRefractionParamsUsable(p, t) && eZeroDegrees > SUNRISE_SUNSET;
 
     if (doCorrect) {
-      return 90
+      return (90
           - eZeroDegrees
-          - (p / 1010.0)
-              * (283.0 / (273.0 + t))
-              * 1.02
-              / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11))));
+          - ((p / 1010.0) * (283.0 / (273.0 + t)) * 1.02)
+              / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11)))));
     } else {
       return 90 - eZeroDegrees;
     }
@@ -798,9 +785,11 @@ public final class SPA {
   private static double[] calculateLBRTerms(final double jme, final double[][][] termCoeffs) {
     final double[] lbrTerms = {0, 0, 0, 0, 0, 0};
 
-    for (int i = 0; i < termCoeffs.length; i++) { // L0, L1, ... Ln
+    for (int i = 0; i < termCoeffs.length; i++) {
+      // L0, L1, ... Ln
       double lbrSum = 0;
-      for (int v = 0; v < termCoeffs[i].length; v++) { // rows of each Li
+      for (int v = 0; v < termCoeffs[i].length; v++) {
+        // rows of each Li
         final double a = termCoeffs[i][v][0]; // coefficients
         final double b = termCoeffs[i][v][1];
         final double c = termCoeffs[i][v][2];
@@ -878,7 +867,7 @@ public final class SPA {
       {33, 0.59, 17789.85},
       {30, 0.44, 83996.85},
       {30, 2.74, 1349.87},
-      {25, 3.16, 4690.48}
+      {25, 3.16, 4690.48},
     },
     {
       {628331966747.0, 0, 0},
@@ -914,7 +903,7 @@ public final class SPA {
       {9, 5.64, 951.72},
       {8, 5.3, 2352.87},
       {6, 2.65, 9437.76},
-      {6, 4.67, 4690.48}
+      {6, 4.67, 4690.48},
     },
     {
       {52919.0, 0, 0},
@@ -936,7 +925,7 @@ public final class SPA {
       {3, 0.31, 398.15},
       {3, 2.28, 553.57},
       {2, 4.38, 5223.69},
-      {2, 3.75, 0.98}
+      {2, 3.75, 0.98},
     },
     {
       {289.0, 5.844, 6283.076},
@@ -945,10 +934,10 @@ public final class SPA {
       {3, 5.2, 155.42},
       {1, 4.72, 3.52},
       {1, 5.3, 18849.23},
-      {1, 5.97, 242.73}
+      {1, 5.97, 242.73},
     },
     {{114.0, 3.142, 0}, {8, 4.13, 6283.08}, {1, 3.84, 12566.15}},
-    {{1, 3.14, 0}}
+    {{1, 3.14, 0}},
   };
 
   private static final double[][][] TERMS_B = {
@@ -957,9 +946,9 @@ public final class SPA {
       {102.0, 5.422, 5507.553},
       {80, 3.88, 5223.69},
       {44, 3.7, 2352.87},
-      {32, 4, 1577.34}
+      {32, 4, 1577.34},
     },
-    {{9, 3.9, 5507.55}, {6, 1.73, 5223.69}}
+    {{9, 3.9, 5507.55}, {6, 1.73, 5223.69}},
   };
 
   private static final double[][][] TERMS_R = {
@@ -1003,7 +992,7 @@ public final class SPA {
       {32, 1.78, 398.15},
       {28, 1.21, 6286.6},
       {28, 1.9, 6279.55},
-      {26, 4.59, 10447.39}
+      {26, 4.59, 10447.39},
     },
     {
       {103019.0, 1.10749, 6283.07585},
@@ -1015,7 +1004,7 @@ public final class SPA {
       {18, 1.42, 1577.34},
       {10, 5.91, 10977.08},
       {9, 1.42, 6275.96},
-      {9, 0.27, 5486.78}
+      {9, 0.27, 5486.78},
     },
     {
       {4359.0, 5.7846, 6283.0758},
@@ -1023,10 +1012,10 @@ public final class SPA {
       {12, 3.14, 0},
       {9, 3.63, 77713.77},
       {6, 1.87, 5573.14},
-      {3, 5.47, 18849.23}
+      {3, 5.47, 18849.23},
     },
     {{145.0, 4.273, 6283.076}, {7, 3.92, 12566.15}},
-    {{4, 2.56, 6283.08}}
+    {{4, 2.56, 6283.08}},
   };
 
   private static final double[][] NUTATION_COEFFS = {
@@ -1034,7 +1023,7 @@ public final class SPA {
     {357.52772, 35999.050340, -0.0001603, -1.0 / 300000},
     {134.96298, 477198.867398, 0.0086972, 1.0 / 56250},
     {93.27191, 483202.017538, -0.0036825, 1.0 / 327270},
-    {125.04452, -1934.136261, 0.0020708, 1.0 / 450000}
+    {125.04452, -1934.136261, 0.0020708, 1.0 / 450000},
   };
 
   private static final double[][] TERMS_Y = {
@@ -1100,7 +1089,7 @@ public final class SPA {
     {0, -1, 1, 2, 2},
     {2, -1, -1, 2, 2},
     {0, 0, 3, 2, 2},
-    {2, -1, 0, 2, 2}
+    {2, -1, 0, 2, 2},
   };
 
   private static final double[][] TERMS_PE = {
@@ -1166,10 +1155,10 @@ public final class SPA {
     {-3, 0, 0, 0},
     {-3, 0, 0, 0},
     {-3, 0, 0, 0},
-    {-3, 0, 0, 0}
+    {-3, 0, 0, 0},
   };
 
   private static final double[] OBLIQUITY_COEFFS = {
-    84381.448, -4680.93, -1.55, 1999.25, 51.38, -249.67, -39.05, 7.12, 27.87, 5.79, 2.45
+    84381.448, -4680.93, -1.55, 1999.25, 51.38, -249.67, -39.05, 7.12, 27.87, 5.79, 2.45,
   };
 }

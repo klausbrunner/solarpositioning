@@ -123,7 +123,7 @@ public final class Grena3 {
 
     final double sEpsilon0 = sPhi * sDelta + cPhi * cDelta * cH;
     final double eP = asin(sEpsilon0) - 4.26e-5 * sqrt(1.0 - sEpsilon0 * sEpsilon0);
-    final double gamma = atan2(sH, cH * sPhi - sDelta * cPhi / cDelta);
+    final double gamma = atan2(sH, cH * sPhi - (sDelta * cPhi) / cDelta);
 
     // refraction correction (disabled for silly parameter values)
     final boolean doCorrect =
@@ -153,11 +153,11 @@ public final class Grena3 {
       y -= 1;
     }
 
-    return (int) (365.25 * (y - 2000))
-        + (int) (30.6001 * (m + 1))
-        - (int) (0.01 * y)
+    return (floor(365.25 * (y - 2000))
+        + floor(30.6001 * (m + 1))
+        - floor(0.01 * y)
         + d
         + 0.0416667 * h
-        - 21958;
+        - 21958);
   }
 }
