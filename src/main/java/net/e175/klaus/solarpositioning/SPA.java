@@ -638,13 +638,8 @@ public final class SPA {
                     * cos(phi)
                     * sin(toRadians(hPrime[2])));
 
-    return switch (type) {
-      case NORMAL ->
-          new SunriseResult.RegularDay(
-              addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
-      case ALL_DAY -> new SunriseResult.AllDay(addFractionOfDay(day, t));
-      case ALL_NIGHT -> new SunriseResult.AllNight(addFractionOfDay(day, t));
-    };
+    return new SunriseResult.RegularDay(
+        addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
   }
 
   private static ZonedDateTime addFractionOfDay(ZonedDateTime day, double fraction) {
