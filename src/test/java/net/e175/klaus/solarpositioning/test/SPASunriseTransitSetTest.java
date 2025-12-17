@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.e175.klaus.solarpositioning.DeltaT;
 import net.e175.klaus.solarpositioning.SPA;
 import net.e175.klaus.solarpositioning.SolarPosition;
 import net.e175.klaus.solarpositioning.SunriseResult;
@@ -214,6 +215,67 @@ class SPASunriseTransitSetTest {
         "2015-09-27T13:12:19+13:00",
         "2015-09-27T19:21:00+13:00",
         REASONABLE_TOLERANCE);
+  }
+
+  @Test
+  void sunriseNearMidnightIsNotSkipped() {
+    double latitude = 49.60139790853522;
+    double longitude = 171.01752655220554;
+
+    for (int dayOfMonth : new int[] {1, 2, 3}) {
+      ZonedDateTime day =
+          ZonedDateTime.parse(String.format("1986-06-%02dT00:00:00+11:00", dayOfMonth));
+      double deltaT = DeltaT.estimate(day.toLocalDate());
+
+      SunriseResult result =
+          SPA.calculateSunriseTransitSet(
+              day, latitude, longitude, deltaT, SPA.Horizon.ASTRONOMICAL_TWILIGHT);
+      assertThat(result).isInstanceOf(SunriseResult.RegularDay.class);
+
+      ZonedDateTime sunrise = ((SunriseResult.RegularDay) result).sunrise();
+      long minutesFromLocalMidnight =
+          ChronoUnit.MINUTES.between(day.truncatedTo(ChronoUnit.DAYS), sunrise);
+
+      assertThat(minutesFromLocalMidnight).isBetween(-60L, 60L);
+      if (dayOfMonth == 3) {
+        assertThat(minutesFromLocalMidnight).isNegative();
+        assertThat(sunrise.toLocalDate()).isEqualTo(LocalDate.of(1986, 6, 2));
+      }
+    }
+  }
+
+  @Test
+  void sunriseNearAntimeridianIsNotShiftedToNextDay() {
+    double latitude = -9.459488331200241;
+    double longitude = 177.60664224032377;
+
+    ZonedDateTime day = ZonedDateTime.parse("1997-11-01T00:00:00+12:00");
+    double deltaT = DeltaT.estimate(day.toLocalDate());
+
+    SunriseResult result = SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT);
+    assertThat(result).isInstanceOf(SunriseResult.RegularDay.class);
+
+    SunriseResult.RegularDay regular = (SunriseResult.RegularDay) result;
+    assertThat(regular.sunrise()).isBefore(regular.transit());
+    assertThat(regular.sunrise().toLocalDate()).isEqualTo(day.toLocalDate());
+  }
+
+  @Test
+  void sunriseStaysOnLocalDateForPlusFiveOffset() {
+    double latitude = -29.807961253888443;
+    double longitude = 80.510704531778;
+
+    ZonedDateTime day = ZonedDateTime.parse("2008-10-16T00:00:00+05:00");
+    double deltaT = DeltaT.estimate(day.toLocalDate());
+
+    SunriseResult result = SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT);
+    assertThat(result).isInstanceOf(SunriseResult.RegularDay.class);
+
+    SunriseResult.RegularDay regular = (SunriseResult.RegularDay) result;
+    assertThat(regular.sunrise().toLocalDate()).isEqualTo(day.toLocalDate());
+    assertThat(regular.transit().toLocalDate()).isEqualTo(day.toLocalDate());
+    assertThat(regular.sunrise()).isBefore(regular.transit());
+    assertThat(regular.transit()).isBefore(regular.sunset());
   }
 
   @Test

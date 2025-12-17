@@ -360,12 +360,12 @@ public final class SPA {
       checkElevationAngle(horizon.elevation());
       result.put(
           horizon,
-          calcRiseAndSet(
+          calcRiseAndSetAdjusted(
               day,
+              latitude,
               longitude,
               deltaT,
               horizon.elevation(),
-              toRadians(latitude),
               params.nuDegrees,
               params.alphaDeltas,
               params.m));
@@ -400,12 +400,12 @@ public final class SPA {
     checkElevationAngle(elevationAngle);
     final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
 
-    return calcRiseAndSet(
+    return calcRiseAndSetAdjusted(
         day,
+        latitude,
         longitude,
         deltaT,
         elevationAngle,
-        toRadians(latitude),
         params.nuDegrees,
         params.alphaDeltas,
         params.m);
@@ -443,18 +443,57 @@ public final class SPA {
       checkElevationAngle(elevationAngle);
       result.put(
           elevationAngle,
-          calcRiseAndSet(
+          calcRiseAndSetAdjusted(
               day,
+              latitude,
               longitude,
               deltaT,
               elevationAngle,
-              toRadians(latitude),
               params.nuDegrees,
               params.alphaDeltas,
               params.m));
     }
 
     return Map.copyOf(result);
+  }
+
+  private static SunriseResult calcRiseAndSetAdjusted(
+      ZonedDateTime day,
+      double latitude,
+      double longitude,
+      double deltaT,
+      double elevationAngle,
+      double nuDegrees,
+      AlphaDelta[] alphaDeltas,
+      double[] m) {
+    SunriseResult base =
+        calcRiseAndSet(
+            day, longitude, deltaT, elevationAngle, toRadians(latitude), nuDegrees, alphaDeltas, m);
+    return adjustSunriseIfAfterTransit(day, base);
+  }
+
+  private static SunriseResult adjustSunriseIfAfterTransit(ZonedDateTime day, SunriseResult base) {
+    if (!(base instanceof SunriseResult.RegularDay regular)) {
+      return base;
+    }
+
+    if (day.getOffset().getTotalSeconds() == 0) {
+      return base;
+    }
+
+    ZonedDateTime sunrise = regular.sunrise();
+    ZonedDateTime transit = regular.transit();
+    ZonedDateTime sunset = regular.sunset();
+
+    if (sunrise.toInstant().isAfter(transit.toInstant())) {
+      sunrise = sunrise.minusDays(1);
+    }
+
+    if (sunset.toInstant().isBefore(transit.toInstant())) {
+      sunset = sunset.plusDays(1);
+    }
+
+    return new SunriseResult.RegularDay(sunrise, transit, sunset);
   }
 
   private static RiseSetParams calcRiseSetParams(
