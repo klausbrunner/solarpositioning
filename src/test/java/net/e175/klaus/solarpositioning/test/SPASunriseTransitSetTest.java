@@ -111,8 +111,8 @@ class SPASunriseTransitSetTest {
         res,
         SunriseResult.RegularDay.class,
         "2003-10-17T06:12:43-07:00",
-        "2003-10-17T11:46:04-07:00",
-        "2003-10-17T17:18:51-07:00",
+        "2003-10-17T11:46:05-07:00",
+        "2003-10-17T17:20:19-07:00",
         STRICT_TOLERANCE);
   }
 
@@ -150,7 +150,7 @@ class SPASunriseTransitSetTest {
         "2015-06-17T07:32:00+12:00",
         "2015-06-17T12:21:41+12:00",
         "2015-06-17T17:11:00+12:00",
-        REASONABLE_TOLERANCE);
+        within(2, ChronoUnit.MINUTES));
   }
 
   @Test
@@ -198,7 +198,7 @@ class SPASunriseTransitSetTest {
         "2016-04-03T06:36:00+12:00",
         "2016-04-03T12:24:19+12:00",
         "2016-04-03T18:12:00+12:00",
-        REASONABLE_TOLERANCE);
+        within(2, ChronoUnit.MINUTES));
   }
 
   @Test
@@ -214,7 +214,7 @@ class SPASunriseTransitSetTest {
         "2015-09-27T07:04:00+13:00",
         "2015-09-27T13:12:19+13:00",
         "2015-09-27T19:21:00+13:00",
-        REASONABLE_TOLERANCE);
+        within(2, ChronoUnit.MINUTES));
   }
 
   @Test

@@ -34,7 +34,7 @@ The API is intentionally "flat", comprising a handful of static methods and simp
 To get refraction-corrected topocentric coordinates:
 
 ```java
-var dateTime = new ZonedDateTime.now();
+var dateTime = ZonedDateTime.now();
 
 // replace SPA with Grena3 as needed
 var position = SPA.calculateSolarPosition(

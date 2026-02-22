@@ -3,6 +3,9 @@ package net.e175.klaus.solarpositioning;
 import static java.lang.Math.*;
 import static net.e175.klaus.solarpositioning.MathUtil.*;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -303,6 +306,8 @@ public final class SPA {
 
   private record RiseSetParams(double nuDegrees, AlphaDelta[] alphaDeltas, double[] m) {}
 
+  private record RiseSetContext(ZonedDateTime dayStartUtc, RiseSetParams params) {}
+
   /**
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
    * definition of sunrise or sunset can be chosen based on a horizon type (defined via its
@@ -353,7 +358,7 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final Horizon... horizons) {
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
+    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
     final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
 
     for (Horizon horizon : horizons) {
@@ -362,13 +367,14 @@ public final class SPA {
           horizon,
           calcRiseAndSetAdjusted(
               day,
+              context.dayStartUtc,
               latitude,
               longitude,
               deltaT,
               horizon.elevation(),
-              params.nuDegrees,
-              params.alphaDeltas,
-              params.m));
+              context.params.nuDegrees,
+              context.params.alphaDeltas,
+              context.params.m));
     }
 
     return Map.copyOf(result);
@@ -398,17 +404,18 @@ public final class SPA {
       final double deltaT,
       final double elevationAngle) {
     checkElevationAngle(elevationAngle);
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
+    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
 
     return calcRiseAndSetAdjusted(
         day,
+        context.dayStartUtc,
         latitude,
         longitude,
         deltaT,
         elevationAngle,
-        params.nuDegrees,
-        params.alphaDeltas,
-        params.m);
+        context.params.nuDegrees,
+        context.params.alphaDeltas,
+        context.params.m);
   }
 
   /**
@@ -436,7 +443,7 @@ public final class SPA {
       final double longitude,
       final double deltaT,
       final double... elevationAngles) {
-    final RiseSetParams params = calcRiseSetParams(day, latitude, longitude, deltaT);
+    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
     final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
 
     for (double elevationAngle : elevationAngles) {
@@ -445,13 +452,14 @@ public final class SPA {
           elevationAngle,
           calcRiseAndSetAdjusted(
               day,
+              context.dayStartUtc,
               latitude,
               longitude,
               deltaT,
               elevationAngle,
-              params.nuDegrees,
-              params.alphaDeltas,
-              params.m));
+              context.params.nuDegrees,
+              context.params.alphaDeltas,
+              context.params.m));
     }
 
     return Map.copyOf(result);
@@ -459,6 +467,7 @@ public final class SPA {
 
   private static SunriseResult calcRiseAndSetAdjusted(
       ZonedDateTime day,
+      ZonedDateTime dayStartUtc,
       double latitude,
       double longitude,
       double deltaT,
@@ -468,16 +477,62 @@ public final class SPA {
       double[] m) {
     SunriseResult base =
         calcRiseAndSet(
-            day, longitude, deltaT, elevationAngle, toRadians(latitude), nuDegrees, alphaDeltas, m);
-    return adjustSunriseIfAfterTransit(day, base);
+            dayStartUtc,
+            day.getZone(),
+            longitude,
+            deltaT,
+            elevationAngle,
+            toRadians(latitude),
+            nuDegrees,
+            alphaDeltas,
+            m);
+    return adjustSunriseIfAfterTransit(base);
   }
 
-  private static SunriseResult adjustSunriseIfAfterTransit(ZonedDateTime day, SunriseResult base) {
+  private static RiseSetContext resolveRiseSetContext(
+      ZonedDateTime day, double latitude, double longitude, double deltaT) {
+    final LocalDate localDate = day.toLocalDate();
+    final RiseSetContext baseContext =
+        createRiseSetContextForUtcDate(localDate, latitude, longitude, deltaT);
+    final LocalDate transitLocalDate =
+        transitLocalDate(
+            calcRiseAndSetAdjusted(
+                day,
+                baseContext.dayStartUtc,
+                latitude,
+                longitude,
+                deltaT,
+                Horizon.SUNRISE_SUNSET.elevation(),
+                baseContext.params.nuDegrees,
+                baseContext.params.alphaDeltas,
+                baseContext.params.m.clone()));
+
+    if (transitLocalDate.equals(localDate)) {
+      return baseContext;
+    }
+
+    final LocalDate shiftedUtcDate =
+        transitLocalDate.isAfter(localDate) ? localDate.minusDays(1) : localDate.plusDays(1);
+    return createRiseSetContextForUtcDate(shiftedUtcDate, latitude, longitude, deltaT);
+  }
+
+  private static RiseSetContext createRiseSetContextForUtcDate(
+      LocalDate utcDate, double latitude, double longitude, double deltaT) {
+    final ZonedDateTime dayStartUtc = utcDate.atStartOfDay(ZoneOffset.UTC);
+    return new RiseSetContext(
+        dayStartUtc, calcRiseSetParams(dayStartUtc, latitude, longitude, deltaT));
+  }
+
+  private static LocalDate transitLocalDate(SunriseResult result) {
+    return result.transit().toLocalDate();
+  }
+
+  private static SunriseResult adjustSunriseIfAfterTransit(SunriseResult base) {
     if (!(base instanceof SunriseResult.RegularDay regular)) {
       return base;
     }
 
-    if (day.getOffset().getTotalSeconds() == 0) {
+    if (regular.transit().getOffset().getTotalSeconds() == 0) {
       return base;
     }
 
@@ -497,11 +552,10 @@ public final class SPA {
   }
 
   private static RiseSetParams calcRiseSetParams(
-      ZonedDateTime day, double latitude, double longitude, double deltaT) {
+      ZonedDateTime dayStartUtc, double latitude, double longitude, double deltaT) {
     checkLatLonRange(latitude, longitude);
 
-    final ZonedDateTime dayStart = startOfDayUT(day);
-    final JulianDate jd = new JulianDate(dayStart, deltaT);
+    final JulianDate jd = new JulianDate(dayStartUtc, deltaT);
 
     // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
     final double jce = jd.julianEphemerisCentury();
@@ -518,8 +572,14 @@ public final class SPA {
     final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
     for (int i = 0; i < alphaDeltas.length; i++) {
       JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, deltaT);
+      double currentJce = currentJd.julianEphemerisCentury();
+      double[] currentXTerms = calculateNutationTerms(currentJce);
+      DeltaPsiEpsilon currentDeltaPsiEpsilon = calculateDeltaPsiEpsilon(currentJce, currentXTerms);
+      double currentEpsilonDegrees =
+          calculateTrueObliquityOfEcliptic(currentJd, currentDeltaPsiEpsilon.deltaEpsilon);
       double currentJme = currentJd.julianEphemerisMillennium();
-      AlphaDelta ad = calculateAlphaDelta(currentJme, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
+      AlphaDelta ad =
+          calculateAlphaDelta(currentJme, currentDeltaPsiEpsilon.deltaPsi, currentEpsilonDegrees);
       alphaDeltas[i] = ad;
     }
 
@@ -531,7 +591,8 @@ public final class SPA {
   }
 
   private static SunriseResult calcRiseAndSet(
-      ZonedDateTime day,
+      ZonedDateTime dayStartUtc,
+      ZoneId outputZone,
       double longitude,
       double deltaT,
       double elevationAngle,
@@ -616,8 +677,8 @@ public final class SPA {
 
     if (type != Type.NORMAL) {
       return (type == Type.ALL_DAY)
-          ? new SunriseResult.AllDay(addFractionOfDay(day, t))
-          : new SunriseResult.AllNight(addFractionOfDay(day, t));
+          ? new SunriseResult.AllDay(addFractionOfDay(dayStartUtc, outputZone, t))
+          : new SunriseResult.AllNight(addFractionOfDay(dayStartUtc, outputZone, t));
     }
 
     // A.2.14. Calculate the sunrise, R (in fraction of day)
@@ -639,12 +700,15 @@ public final class SPA {
                     * sin(toRadians(hPrime[2])));
 
     return new SunriseResult.RegularDay(
-        addFractionOfDay(day, r), addFractionOfDay(day, t), addFractionOfDay(day, s));
+        addFractionOfDay(dayStartUtc, outputZone, r),
+        addFractionOfDay(dayStartUtc, outputZone, t),
+        addFractionOfDay(dayStartUtc, outputZone, s));
   }
 
-  private static ZonedDateTime addFractionOfDay(ZonedDateTime day, double fraction) {
+  private static ZonedDateTime addFractionOfDay(
+      ZonedDateTime dayStartUtc, ZoneId outputZone, double fraction) {
     final int millisPlus = (int) (MS_PER_DAY * fraction);
-    return day.truncatedTo(ChronoUnit.DAYS).plus(millisPlus, ChronoUnit.MILLIS);
+    return dayStartUtc.plus(millisPlus, ChronoUnit.MILLIS).withZoneSameInstant(outputZone);
   }
 
   /** limit H' values according to A.2.11 */
@@ -702,10 +766,6 @@ public final class SPA {
     final double deltaDegrees = toDegrees(calculateGeocentricSunDeclination(beta, epsilon, lambda));
 
     return new AlphaDelta(alphaDegrees, deltaDegrees);
-  }
-
-  private static ZonedDateTime startOfDayUT(ZonedDateTime day) {
-    return day.truncatedTo(ChronoUnit.DAYS);
   }
 
   private static SolarPosition calculateTopocentricSolarPosition(
