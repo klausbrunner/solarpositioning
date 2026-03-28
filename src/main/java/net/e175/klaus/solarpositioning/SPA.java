@@ -80,16 +80,13 @@ public final class SPA {
     final double jce = jd.julianEphemerisCentury();
 
     // calculate Earth heliocentric longitude, L
-    final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
-    final double lDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, lTerms)), 360);
+    final double lDegrees = lbrToNormalizedDegrees(jme, TERMS_L);
 
     // calculate Earth heliocentric latitude, B
-    final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-    final double bDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, bTerms)), 360);
+    final double bDegrees = lbrToNormalizedDegrees(jme, TERMS_B);
 
     // calculate Earth radius vector, R
-    final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
-    final double r = calculateLBRPolynomial(jme, rTerms);
+    final double r = calculateLBRPolynomial(jme, TERMS_R);
     assert r != 0;
 
     // calculate geocentric longitude, theta
@@ -118,13 +115,11 @@ public final class SPA {
     final double nuDegrees =
         calculateApparentSiderealTimeAtGreenwich(jd, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
 
-    // Calculate the geocentric sun right ascension
-    final double alphaDegrees = calculateGeocentricSunRightAscension(beta, epsilon, lambda);
+    final AlphaDelta geocentricCoordinates =
+        calculateGeocentricSunCoordinates(beta, epsilon, lambda);
 
-    // Calculate geocentric sun declination
-    final double deltaDegrees = toDegrees(calculateGeocentricSunDeclination(beta, epsilon, lambda));
-
-    return new SpaTimeDependent(r, nuDegrees, alphaDegrees, deltaDegrees);
+    return new SpaTimeDependent(
+        r, nuDegrees, geocentricCoordinates.alpha, geocentricCoordinates.delta);
   }
 
   /**
@@ -733,17 +728,14 @@ public final class SPA {
   private static AlphaDelta calculateAlphaDelta(
       double jme, double deltaPsi, double epsilonDegrees) {
     // calculate Earth heliocentric latitude, B
-    final double[] bTerms = calculateLBRTerms(jme, TERMS_B);
-    final double bDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, bTerms)), 360);
+    final double bDegrees = lbrToNormalizedDegrees(jme, TERMS_B);
 
     // calculate Earth radius vector, R
-    final double[] rTerms = calculateLBRTerms(jme, TERMS_R);
-    final double r = calculateLBRPolynomial(jme, rTerms);
+    final double r = calculateLBRPolynomial(jme, TERMS_R);
     assert r != 0;
 
     // calculate Earth heliocentric longitude, L
-    final double[] lTerms = calculateLBRTerms(jme, TERMS_L);
-    final double lDegrees = limitTo(toDegrees(calculateLBRPolynomial(jme, lTerms)), 360);
+    final double lDegrees = lbrToNormalizedDegrees(jme, TERMS_L);
 
     // calculate geocentric longitude, theta
     final double thetaDegrees = limitTo(lDegrees + 180, 360);
@@ -760,12 +752,7 @@ public final class SPA {
     final double lambdaDegrees = thetaDegrees + deltaPsi + deltaTau;
     final double lambda = toRadians(lambdaDegrees);
 
-    // Calculate the geocentric sun right ascension
-    final double alphaDegrees = calculateGeocentricSunRightAscension(beta, epsilon, lambda);
-    // Calculate geocentric sun declination
-    final double deltaDegrees = toDegrees(calculateGeocentricSunDeclination(beta, epsilon, lambda));
-
-    return new AlphaDelta(alphaDegrees, deltaDegrees);
+    return calculateGeocentricSunCoordinates(beta, epsilon, lambda);
   }
 
   private static SolarPosition calculateTopocentricSolarPosition(
@@ -808,17 +795,20 @@ public final class SPA {
     }
   }
 
-  private static double calculateGeocentricSunDeclination(
+  private static AlphaDelta calculateGeocentricSunCoordinates(
       final double betaRad, final double epsilonRad, final double lambdaRad) {
-    return asin(sin(betaRad) * cos(epsilonRad) + cos(betaRad) * sin(epsilonRad) * sin(lambdaRad));
-  }
+    final double sinLambda = sin(lambdaRad);
+    final double cosLambda = cos(lambdaRad);
+    final double sinEpsilon = sin(epsilonRad);
+    final double cosEpsilon = cos(epsilonRad);
+    final double sinBeta = sin(betaRad);
+    final double cosBeta = cos(betaRad);
 
-  private static double calculateGeocentricSunRightAscension(
-      final double betaRad, final double epsilonRad, final double lambdaRad) {
     final double alpha =
-        atan2(sin(lambdaRad) * cos(epsilonRad) - tan(betaRad) * sin(epsilonRad), cos(lambdaRad));
+        atan2(sinLambda * cosEpsilon - (sinBeta / cosBeta) * sinEpsilon, cosLambda);
+    final double delta = asin(sinBeta * cosEpsilon + cosBeta * sinEpsilon * sinLambda);
 
-    return limitTo(toDegrees(alpha), 360);
+    return new AlphaDelta(limitTo(toDegrees(alpha), 360), toDegrees(delta));
   }
 
   private static double calculateTrueObliquityOfEcliptic(
@@ -872,28 +862,22 @@ public final class SPA {
     return x;
   }
 
-  private static double calculateLBRPolynomial(final double jme, final double[] terms) {
-    return polynomial(jme, terms) / 1e8;
-  }
-
-  private static double[] calculateLBRTerms(final double jme, final double[][][] termCoeffs) {
-    final double[] lbrTerms = {0, 0, 0, 0, 0, 0};
+  private static double calculateLBRPolynomial(final double jme, final double[][][] termCoeffs) {
+    final double[] perPowerSums = new double[termCoeffs.length];
 
     for (int i = 0; i < termCoeffs.length; i++) {
-      // L0, L1, ... Ln
-      double lbrSum = 0;
-      for (int v = 0; v < termCoeffs[i].length; v++) {
-        // rows of each Li
-        final double a = termCoeffs[i][v][0]; // coefficients
-        final double b = termCoeffs[i][v][1];
-        final double c = termCoeffs[i][v][2];
-
-        lbrSum = Math.fma(a, cos(b + c * jme), lbrSum);
+      double sum = 0;
+      for (double[] coeffs : termCoeffs[i]) {
+        sum = Math.fma(coeffs[0], cos(coeffs[1] + coeffs[2] * jme), sum);
       }
-      lbrTerms[i] = lbrSum;
+      perPowerSums[i] = sum;
     }
 
-    return lbrTerms;
+    return polynomial(jme, perPowerSums) / 1e8;
+  }
+
+  private static double lbrToNormalizedDegrees(final double jme, final double[][][] termCoeffs) {
+    return limitTo(toDegrees(calculateLBRPolynomial(jme, termCoeffs)), 360);
   }
 
   private static final double[][][] TERMS_L = {
