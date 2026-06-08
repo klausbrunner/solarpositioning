@@ -18,4 +18,14 @@ class SolarPositionTest {
     assertThrows(IllegalArgumentException.class, () -> new SolarPosition(90, -0.1));
     assertThrows(IllegalArgumentException.class, () -> new SolarPosition(90, 180.1));
   }
+
+  @Test
+  public void rejectsNonFiniteValues() {
+    assertThrows(IllegalArgumentException.class, () -> new SolarPosition(Double.NaN, 90));
+    assertThrows(IllegalArgumentException.class, () -> new SolarPosition(90, Double.NaN));
+    assertThrows(
+        IllegalArgumentException.class, () -> new SolarPosition(Double.POSITIVE_INFINITY, 90));
+    assertThrows(
+        IllegalArgumentException.class, () -> new SolarPosition(90, Double.POSITIVE_INFINITY));
+  }
 }

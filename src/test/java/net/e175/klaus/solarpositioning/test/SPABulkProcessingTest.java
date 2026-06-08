@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.within;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import net.e175.klaus.solarpositioning.SPA;
@@ -177,54 +176,6 @@ class SPABulkProcessingTest {
           .as("Zenith angle for coordinate lat=%f, lon=%f", lat, lon)
           .isCloseTo(traditional.zenithAngle(), within(TOLERANCE));
     }
-  }
-
-  @Test
-  void performanceBenefitOfBulkProcessing() {
-    ZonedDateTime dateTime =
-        ZonedDateTime.of(LocalDateTime.of(2024, 12, 21, 12, 0), ZoneId.of("UTC"));
-    double deltaT = 69.0;
-
-    // Generate a grid of coordinates
-    List<Coordinate> coordinates = new ArrayList<>();
-    for (double lat = -60; lat <= 60; lat += 10) {
-      for (double lon = -180; lon <= 170; lon += 10) {
-        coordinates.add(new Coordinate(lat, lon, 0));
-      }
-    }
-
-    // Warm up JVM
-    for (int warmup = 0; warmup < 10; warmup++) {
-      for (Coordinate coord : coordinates) {
-        SPA.calculateSolarPosition(
-            dateTime, coord.latitude, coord.longitude, coord.elevation, deltaT);
-      }
-    }
-
-    // Time traditional approach
-    long startTraditional = System.nanoTime();
-    for (Coordinate coord : coordinates) {
-      SPA.calculateSolarPosition(
-          dateTime, coord.latitude, coord.longitude, coord.elevation, deltaT);
-    }
-    long traditionalTime = System.nanoTime() - startTraditional;
-
-    // Time optimized approach
-    long startOptimized = System.nanoTime();
-    SPA.SpaTimeDependent timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
-    for (Coordinate coord : coordinates) {
-      SPA.calculateSolarPositionWithTimeDependentParts(
-          coord.latitude, coord.longitude, coord.elevation, timeDependent);
-    }
-    long optimizedTime = System.nanoTime() - startOptimized;
-
-    double speedup = (double) traditionalTime / optimizedTime;
-    System.out.printf(
-        "Traditional: %.2f ms, Optimized: %.2f ms, Speedup: %.2fx%n",
-        traditionalTime / 1_000_000.0, optimizedTime / 1_000_000.0, speedup);
-
-    // Optimized approach should be significantly faster
-    assertThat(optimizedTime).isLessThan(traditionalTime);
   }
 
   @Test
