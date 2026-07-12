@@ -1,6 +1,7 @@
 package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.ZoneOffset;
@@ -24,6 +25,17 @@ class SPATest {
 
     assertEquals(194.340241, result.azimuth(), TOLERANCE / 100);
     assertEquals(50.111622, result.zenithAngle(), TOLERANCE / 100);
+  }
+
+  @Test
+  void preservesSubSecondPrecision() {
+    ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+
+    SolarPosition atStart = SPA.calculateSolarPosition(time, 39.742476, -105.1786, 1830.14, 67);
+    SolarPosition halfSecondLater =
+        SPA.calculateSolarPosition(time.plusNanos(500_000_000), 39.742476, -105.1786, 1830.14, 67);
+
+    assertNotEquals(atStart, halfSecondLater);
   }
 
   @Test

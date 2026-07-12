@@ -50,7 +50,11 @@ public record JulianDate(double julianDate, double deltaT) {
     final double d =
         localDateTime.getDayOfMonth()
             + (localDateTime.getHour()
-                    + (localDateTime.getMinute() + localDateTime.getSecond() / 60.0) / 60.0)
+                    + (localDateTime.getMinute()
+                            + (localDateTime.getSecond()
+                                    + localDateTime.getNano() / 1_000_000_000.0)
+                                / 60.0)
+                        / 60.0)
                 / 24.0;
     final double jd =
         Math.floor(365.25 * (y + 4716.0)) + Math.floor(30.6001 * (m + 1)) + d - 1524.5;

@@ -40,6 +40,17 @@ class JulianDateTest {
   }
 
   @Test
+  void preservesSubSecondPrecision() {
+    ZonedDateTime start = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC);
+    ZonedDateTime halfSecondLater = start.plusNanos(500_000_000);
+
+    double elapsedJulianDays =
+        new JulianDate(halfSecondLater).julianDate() - new JulianDate(start).julianDate();
+
+    assertEquals(0.5 / 86_400, elapsedJulianDays, 1e-9);
+  }
+
+  @Test
   void testPre1000() {
     ZonedDateTime utcTime = ZonedDateTime.of(837, 4, 10, 7, 12, 0, 0, ZoneOffset.UTC);
 

@@ -3,6 +3,7 @@ package net.e175.klaus.solarpositioning.test;
 import static java.lang.Math.PI;
 import static java.lang.Math.toDegrees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.ZoneOffset;
@@ -41,6 +42,17 @@ class Grena3Test {
 
     assertEquals(291.232854, result.azimuth(), TOLERANCE);
     assertEquals(76.799924, result.zenithAngle(), TOLERANCE);
+  }
+
+  @Test
+  void preservesSubSecondPrecision() {
+    ZonedDateTime time = ZonedDateTime.of(2015, 6, 28, 17, 45, 12, 0, ZoneOffset.UTC);
+
+    SolarPosition atStart = Grena3.calculateSolarPosition(time, 52.509663, 13.376481, 68);
+    SolarPosition halfSecondLater =
+        Grena3.calculateSolarPosition(time.plusNanos(500_000_000), 52.509663, 13.376481, 68);
+
+    assertNotEquals(atStart, halfSecondLater);
   }
 
   @Test

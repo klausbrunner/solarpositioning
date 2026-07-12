@@ -146,7 +146,10 @@ public final class Grena3 {
     int m = utc.getMonthValue();
     int y = utc.getYear();
     final int d = utc.getDayOfMonth();
-    final double h = utc.getHour() + utc.getMinute() / 60d + utc.getSecond() / (60d * 60);
+    final double h =
+        utc.getHour()
+            + utc.getMinute() / 60d
+            + (utc.getSecond() + utc.getNano() / 1_000_000_000d) / (60d * 60);
 
     if (m <= 2) {
       m += 12;
