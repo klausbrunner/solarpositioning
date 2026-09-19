@@ -7,14 +7,21 @@ import java.time.LocalDate;
 /**
  * Estimate values for Delta T, the difference between Terrestrial Time (TT) and Universal Time
  * (UT1).
+ *
+ * <p>Based on Espenak and Meeus, "Five Millennium Canon of Solar Eclipses: -1999 to +3000"
+ * (NASA/TP-2006-214141), with Espenak's <a
+ * href="https://www.eclipsewise.com/help/deltatpoly2014.html">2014 update</a>. The branches from
+ * 2015 onwards use a <a href="https://klaus.brunners.name/posts/delta-t-polynomials/">2026
+ * adaptation</a>: a quartic fitted to IERS observations through mid-2026, followed by a quadratic
+ * fitted to a median of simulations by Agnew (2026).
+ *
+ * <p>Future values are (very) uncertain extrapolations, particularly beyond 2100.
  */
 public final class DeltaT {
   private DeltaT() {}
 
   /**
-   * Estimate Delta T for the given date. This is based on Espenak and Meeus, "Five Millennium Canon
-   * of Solar Eclipses: -1999 to +3000" (NASA/TP-2006-214141) and updated by Espenak in 2014 at <a
-   * href="https://www.eclipsewise.com/help/deltatpoly2014.html">Eclipsewise</a>.
+   * Estimate Delta T for the given date, using the midpoint of its calendar month.
    *
    * @param forDate date
    * @return estimated delta T value (seconds)
@@ -87,9 +94,20 @@ public final class DeltaT {
     } else if (year < 2015) {
       double t = year - 2005;
       deltaT = polynomial(t, 64.69, 0.2930);
-    } else if (year <= 3000) {
+    } else if (year < 2026.5) {
       double t = year - 2015;
-      deltaT = polynomial(t, 67.62, 0.3645, 0.0039755);
+      // Retain the full fitted precision; the branches join in value and slope at 2026.5.
+      deltaT =
+          polynomial(
+              t,
+              67.62,
+              0.49005948394643584,
+              0.01470571892410194,
+              -0.011854572510804597,
+              0.00068432045764693194);
+    } else if (year <= 3000) {
+      double t = year - 2026.5;
+      deltaT = polynomial(t, 69.14, 0.28805287963416737, 0.0057380400318460655);
     } else {
       throw new IllegalArgumentException("no estimates possible for this time");
     }

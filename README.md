@@ -129,12 +129,9 @@ this value could be negligible as it's just over a minute (about 70 seconds) as 
 looking for maximum accuracy, you should use an observed value (available from e.g. the US Naval 
 Observatory) or at least a solid estimate.
 
-The DeltaT class provides an estimator based on polynomials fitting a number of observed (or extrapolated) historical
-values, published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html) in 2007 and slightly updated by [Espenak](https://www.eclipsewise.com/help/deltatpoly2014.html) in 2014.
-
-As of 2025, it appears that today's extrapolated values from this estimator are a little high (some 2 seconds). This gap
-will widen in the coming decades (cf. [Morrison et al. 2021](https://royalsocietypublishing.org/doi/10.1098/rspa.2020.0776)). 
-Still, the estimates should work sufficiently well for most applications.
+`DeltaT.estimate()` uses polynomials originally published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html)
+and [updated by Espenak in 2014](https://www.eclipsewise.com/help/deltatpoly2014.html), with custom replacement branches from 2015 onwards. The [derivation and comparisons](https://klaus.brunners.name/posts/delta-t-polynomials/) describe the fit and its
+limitations. Future values remain uncertain, and extrapolation beyond 2100 is particularly speculative.
 
 ### Is it thread-safe?
 

@@ -1,6 +1,7 @@
 package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDate;
 import net.e175.klaus.solarpositioning.DeltaT;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class DeltaTTest {
 
@@ -46,6 +48,75 @@ class DeltaTTest {
     assertEquals(24.02, DeltaT.estimate(yearCal(1930)), 1);
 
     assertEquals(29, DeltaT.estimate(yearCal(1950)), 1);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "2000, 63.86",
+    "2005, 64.69",
+    "2010, 66.155",
+    "2014.999, 67.619707",
+    "2015, 67.62",
+    "2017, 68.575054390825201",
+    "2020, 69.383819115013495",
+    "2023, 69.215077351703897",
+    "2026, 69.030746121754945",
+    "2026.5, 69.14",
+    "2027, 69.285460949825051",
+    "2030, 70.218476069109713",
+    "2045, 76.432822474131413",
+    "2100, 121.310213415151708",
+    "3000, 5787.512927094449878"
+  })
+  void testAdaptationReferenceValues(double year, double expected) {
+    assertEquals(expected, DeltaT.estimate(year), 1e-10);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "2015, 67.6439282",
+    "2017, 68.5927130",
+    "2020, 69.3611665",
+    "2023, 69.2038475",
+    "2026, 69.1099131",
+    "2026.498630136986321, 69.1691721"
+  })
+  void testRecentIersObservations(double year, double observed) {
+    // IERS 20u24 C04, downloaded 14 September 2026; Delta T = 32.184 + TAI-UTC - UT1-UTC.
+    assertEquals(observed, DeltaT.estimate(year), 0.2);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"2015, 67.62", "2026.5, 69.14"})
+  void testContinuousAtUpdatedBranchBoundaries(double year, double expected) {
+    assertEquals(expected, DeltaT.estimate(Math.nextDown(year)), 1e-12);
+    assertEquals(expected, DeltaT.estimate(year), 1e-12);
+    assertEquals(expected, DeltaT.estimate(Math.nextUp(year)), 1e-12);
+  }
+
+  @Test
+  void testSmoothJoinInMid2026() {
+    double year = 2026.5;
+    double step = 1e-4;
+    double leftSlope = (DeltaT.estimate(year) - DeltaT.estimate(year - step)) / step;
+    double rightSlope = (DeltaT.estimate(year + step) - DeltaT.estimate(year)) / step;
+    assertEquals(leftSlope, rightSlope, 2e-5);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "2014-12-31, 2014, 12",
+    "2015-01-01, 2015, 1",
+    "2026-06-30, 2026, 6",
+    "2026-07-01, 2026, 7"
+  })
+  void testDateOverloadAtUpdatedBranches(LocalDate date, int year, int month) {
+    assertEquals(DeltaT.estimate(year + (month - 0.5) / 12), DeltaT.estimate(date));
+  }
+
+  @Test
+  void testUpperYearLimit() {
+    assertThrows(IllegalArgumentException.class, () -> DeltaT.estimate(Math.nextUp(3000.0)));
   }
 
   @ParameterizedTest
