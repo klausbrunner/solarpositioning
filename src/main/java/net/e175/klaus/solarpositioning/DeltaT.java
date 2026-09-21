@@ -96,15 +96,10 @@ public final class DeltaT {
       deltaT = polynomial(t, 64.69, 0.2930);
     } else if (year < 2026.5) {
       double t = year - 2015;
-      // Retain the full fitted precision; the branches join in value and slope at 2026.5.
+      // Retain full precision; the branches join in value and slope at 2015 and 2026.5.
       deltaT =
           polynomial(
-              t,
-              67.62,
-              0.49005948394643584,
-              0.01470571892410194,
-              -0.011854572510804597,
-              0.00068432045764693194);
+              t, 67.62, 0.2930, 0.08753166427153103, -0.020049795884351372, 0.0009758496126416308);
     } else if (year <= 3000) {
       double t = year - 2026.5;
       deltaT = polynomial(t, 69.14, 0.28805287963416737, 0.0057380400318460655);
