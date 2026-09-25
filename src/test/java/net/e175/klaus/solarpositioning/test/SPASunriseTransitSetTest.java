@@ -102,9 +102,11 @@ class SPASunriseTransitSetTest {
   }
 
   @Test
-  void testSpaExampleSunriseTransitSet() {
+  void spaExamplePreservesSunsetDayOffset() {
     ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
+    // Unlike the paper's wrapped estimate (17:20:19), sunset uses its actual UTC day.
+    // Expected value agrees with the corrected Rust implementation.
     var res = SPA.calculateSunriseTransitSet(time, 39.742476, -105.1786, 67);
 
     compare(
@@ -112,7 +114,7 @@ class SPASunriseTransitSetTest {
         SunriseResult.RegularDay.class,
         "2003-10-17T06:12:43-07:00",
         "2003-10-17T11:46:05-07:00",
-        "2003-10-17T17:20:19-07:00",
+        "2003-10-17T17:18:51.673-07:00",
         STRICT_TOLERANCE);
   }
 
@@ -324,7 +326,7 @@ class SPASunriseTransitSetTest {
       LocalTime sunrise,
       LocalTime transit,
       LocalTime sunset) {
-    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = eventsOnUtcDate(dateTime, lat, lon, SPA.Horizon.SUNRISE_SUNSET);
 
     compare(
         res,
@@ -334,6 +336,76 @@ class SPASunriseTransitSetTest {
         transit,
         sunset,
         within(1, ChronoUnit.SECONDS));
+  }
+
+  // Reference tables list events within a UTC calendar day, not around one transit.
+  private static SunriseResult eventsOnUtcDate(
+      ZonedDateTime day, double latitude, double longitude, SPA.Horizon horizon) {
+    SunriseResult result = SPA.calculateSunriseTransitSet(day, latitude, longitude, 0, horizon);
+    if (!(result instanceof SunriseResult.RegularDay regular)) {
+      return result;
+    }
+    ZonedDateTime[] events = {regular.sunrise(), regular.sunset()};
+    for (int i = 0; i < events.length; i++) {
+      long offset = ChronoUnit.DAYS.between(events[i].toLocalDate(), day.toLocalDate());
+      if (offset != 0) {
+        SunriseResult adjacent =
+            SPA.calculateSunriseTransitSet(day.plusDays(offset), latitude, longitude, 0, horizon);
+        if (!(adjacent instanceof SunriseResult.RegularDay adjacentDay)) {
+          throw new IllegalStateException("SPA classifies the adjacent transit as polar");
+        }
+        events[i] = i == 0 ? adjacentDay.sunrise() : adjacentDay.sunset();
+      }
+      assertEquals(day.toLocalDate(), events[i].toLocalDate());
+    }
+    return new SunriseResult.RegularDay(events[0], regular.transit(), events[1]);
+  }
+
+  @ParameterizedTest
+  @CsvFileSource(resources = "sunrise/rust_reference.csv")
+  void matchesRustSunriseResults(
+      ZonedDateTime day,
+      double latitude,
+      double longitude,
+      double deltaT,
+      double elevation,
+      String type,
+      String sunrise,
+      String transit,
+      String sunset) {
+    SunriseResult result =
+        SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, elevation);
+    compare(result, dayTypeToClass(type), sunrise, transit, sunset, within(1, ChronoUnit.MILLIS));
+    var multiple =
+        SPA.calculateSunriseTransitSet(
+            day, latitude, longitude, deltaT, new double[] {elevation, -4.0});
+    assertThat(multiple.get(elevation)).isEqualTo(result);
+    for (SPA.Horizon horizon : SPA.Horizon.values()) {
+      if (horizon.elevation() == elevation) {
+        assertThat(SPA.calculateSunriseTransitSet(day, latitude, longitude, deltaT, horizon))
+            .isEqualTo(result);
+        assertThat(
+                SPA.calculateSunriseTransitSet(
+                        day, latitude, longitude, deltaT, SPA.Horizon.values())
+                    .get(horizon))
+            .isEqualTo(result);
+      }
+    }
+  }
+
+  @Test
+  void interpolationUsesTtMidnight() {
+    // Same pvlib 0.15.2 conformance case as Rust; large deltaT exposes double counting.
+    ZonedDateTime day = ZonedDateTime.parse("2024-03-20T00:00:00Z");
+    var result =
+        (SunriseResult.RegularDay)
+            SPA.calculateSunriseTransitSet(day, 48.21, 16.37, 3600.0, -0.8333);
+    double[] expected = {4.947567514975866, 11.033161676393615, 17.13368758128749};
+    ZonedDateTime[] actual = {result.sunrise(), result.transit(), result.sunset()};
+    for (int i = 0; i < actual.length; i++) {
+      double seconds = Duration.between(day, actual[i]).toMillis() / 1000.0;
+      assertEquals(expected[i] * 3600.0, seconds, 0.001);
+    }
   }
 
   private static Class<?> dayTypeToClass(String dayType) {
@@ -354,7 +426,7 @@ class SPASunriseTransitSetTest {
       String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = eventsOnUtcDate(dateTime, lat, lon, SPA.Horizon.SUNRISE_SUNSET);
     var typeClass = dayTypeToClass(typeString);
 
     if (typeClass.equals(SunriseResult.RegularDay.class)) {
@@ -378,7 +450,7 @@ class SPASunriseTransitSetTest {
       String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0);
+    var res = eventsOnUtcDate(dateTime, lat, lon, SPA.Horizon.SUNRISE_SUNSET);
     var typeClass = dayTypeToClass(typeString);
 
     if (typeClass.equals(SunriseResult.RegularDay.class)) {
@@ -423,7 +495,17 @@ class SPASunriseTransitSetTest {
       String typeString,
       LocalTime sunrise,
       LocalTime sunset) {
-    var res = SPA.calculateSunriseTransitSet(dateTime, lat, lon, 0, SPA.Horizon.CIVIL_TWILIGHT);
+    // Known SPA A.2.4 limitation, also covered in Rust: the preceding transit
+    // is classified AllDay although USNO lists a dusk on this UTC date.
+    if (dateTime.toLocalDate().equals(LocalDate.of(2020, 7, 5))
+        && lat == 61.21666666666667
+        && lon == -149.86666666666667) {
+      assertThrows(
+          IllegalStateException.class,
+          () -> eventsOnUtcDate(dateTime, lat, lon, SPA.Horizon.CIVIL_TWILIGHT));
+      return;
+    }
+    var res = eventsOnUtcDate(dateTime, lat, lon, SPA.Horizon.CIVIL_TWILIGHT);
     var typeClass = dayTypeToClass(typeString);
 
     if (typeClass.equals(SunriseResult.RegularDay.class)) {

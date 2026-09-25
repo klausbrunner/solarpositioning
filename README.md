@@ -10,7 +10,7 @@ alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by 
 included to validate against the reference code and other sources.
 
 > [!NOTE]
-> This library is **not** based on or derived from any code published by NREL, ENEA or other parties. It is an implementation precisely following the algorithms described in the respective papers.
+> This library is **not** based on or derived from any code published by NREL, ENEA or other parties. It implements the algorithms as described in the respective papers, with minimal adjustments documented below.
 
 ## Usage
 
@@ -20,7 +20,7 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.2</version>
 </dependency>
 ```
 
@@ -101,26 +101,16 @@ See the Javadoc for more methods.
 While Grena3 is about an order of magnitude faster than SPA, in absolute terms we are talking about microseconds. The difference
 mostly matters for bulk calculations.
 
-### Notes on sunrise, sunset, and twilight
+### Sunrise/sunset accuracy notes
 
-* Calculation is based on the usual correction of 0.833° on the zenith angle, i.e. sunrise and sunset are assumed to
-  occur when the center of the solar disc is 50 arc-minutes below the horizon. While commonly used, this fixed value
-  fails to account for the varying effects of atmospheric refraction. Calculated and observed sunrise and sunset times
-  may easily differ by several minutes (cf. [Wilson 2018](https://doi.org/10.37099/mtu.dc.etdr/697)).
-* As a general note on accuracy, Jean Meeus advises that "giving rising or setting times .. more accurately than to the
-  nearest minute makes no sense" (_Astronomical Algorithms_). Errors increase the farther the position from the equator,
-  i.e. values for polar regions are much less reliable.
-* The SPA sunset/sunrise algorithm is one of the most accurate ones around. Results of this implementation correspond
-  very closely to the [NOAA calculator](http://www.esrl.noaa.gov/gmd/grad/solcalc/)'s. Also see a [comparison with some other Java sunrise libraries](https://klaus.brunners.name/posts/sunrise-libs-comparison/).
+- Sunrise and sunset use the standard solar-centre elevation of −0.833° (50 arcminutes below the geometric horizon), accounting for average atmospheric refraction and the Sun's apparent radius.
+- Atmospheric variability limits the accuracy of predicted observed sunrise/sunset times: differences of a minute or more are possible, especially where the Sun crosses the horizon at a shallow angle ([USNO](https://aa.usno.navy.mil/faq/RST_defs)).
+- SPA's sunrise/sunset and twilight calculations become less reliable near seasonal transitions where the Sun barely crosses the selected horizon.
+- Days with only a rising or setting event are not reliably supported by SPA.
 
-#### Divergence from the NREL SPA reference code
+#### Difference in SPA day wrapping
 
-The library follows the procedure in the SPA paper: sidereal time is evaluated at 0 **UT** (A.2.1)
-while the geocentric α/δ for sunrise/sunset interpolation are evaluated at 0 **TT** for D−1/D/D+1 (A.2.2). The NREL
-reference code (`spa.c`) resets ΔT to zero when building those intermediate ephemerides, effectively keeping
-them in UT. This Java code preserves the supplied ΔT to stay faithful to the published algorithm rather than the
-C code. As a consequence, sunrise/sunset times differ slightly from `spa.c` but should line up better with
-high-precision ephemerides (JPL Horizons, USNO almanacs, etc.).
+Unlike SPA Appendix A.2.7, this library retains sunrise and sunset estimates’ day offsets around the selected transit instead of wrapping them independently into [0, 1). This avoids using the wrong day’s solar coordinates.
 
 ### What's this "delta T" thing?
 

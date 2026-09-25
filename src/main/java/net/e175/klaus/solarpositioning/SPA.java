@@ -284,6 +284,10 @@ public final class SPA {
    * calculation is based on the astronomical definition of sunrise and sunset, using a refraction
    * correction of -0.8333°.
    *
+   * <p>Transit falls on the requested local date; rise/set events may fall on adjacent dates.
+   * Unlike SPA A.2.7, estimates retain their day offsets around transit rather than wrapping
+   * independently into a UTC day. Interpolation and correction equations are unchanged.
+   *
    * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
    *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
    * @param latitude Observer's latitude, in degrees (negative south of equator).
@@ -360,7 +364,7 @@ public final class SPA {
       checkElevationAngle(horizon.elevation());
       result.put(
           horizon,
-          calcRiseAndSetAdjusted(
+          calcRiseAndSetForDay(
               day,
               context.dayStartUtc,
               latitude,
@@ -401,7 +405,7 @@ public final class SPA {
     checkElevationAngle(elevationAngle);
     final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
 
-    return calcRiseAndSetAdjusted(
+    return calcRiseAndSetForDay(
         day,
         context.dayStartUtc,
         latitude,
@@ -445,7 +449,7 @@ public final class SPA {
       checkElevationAngle(elevationAngle);
       result.put(
           elevationAngle,
-          calcRiseAndSetAdjusted(
+          calcRiseAndSetForDay(
               day,
               context.dayStartUtc,
               latitude,
@@ -460,7 +464,7 @@ public final class SPA {
     return Map.copyOf(result);
   }
 
-  private static SunriseResult calcRiseAndSetAdjusted(
+  private static SunriseResult calcRiseAndSetForDay(
       ZonedDateTime day,
       ZonedDateTime dayStartUtc,
       double latitude,
@@ -470,45 +474,43 @@ public final class SPA {
       double nuDegrees,
       AlphaDelta[] alphaDeltas,
       double[] m) {
-    SunriseResult base =
-        calcRiseAndSet(
-            dayStartUtc,
-            day.getZone(),
-            longitude,
-            deltaT,
-            elevationAngle,
-            toRadians(latitude),
-            nuDegrees,
-            alphaDeltas,
-            m);
-    return adjustSunriseIfAfterTransit(base);
+    return calcRiseAndSet(
+        dayStartUtc,
+        day.getZone(),
+        longitude,
+        deltaT,
+        elevationAngle,
+        toRadians(latitude),
+        nuDegrees,
+        alphaDeltas,
+        m);
   }
 
   private static RiseSetContext resolveRiseSetContext(
       ZonedDateTime day, double latitude, double longitude, double deltaT) {
     final LocalDate localDate = day.toLocalDate();
-    final RiseSetContext baseContext =
-        createRiseSetContextForUtcDate(localDate, latitude, longitude, deltaT);
-    final LocalDate transitLocalDate =
-        transitLocalDate(
-            calcRiseAndSetAdjusted(
-                day,
-                baseContext.dayStartUtc,
-                latitude,
-                longitude,
-                deltaT,
-                Horizon.SUNRISE_SUNSET.elevation(),
-                baseContext.params.nuDegrees,
-                baseContext.params.alphaDeltas,
-                baseContext.params.m.clone()));
-
-    if (transitLocalDate.equals(localDate)) {
-      return baseContext;
+    LocalDate utcDate = localDate;
+    for (int attempt = 0; attempt < 2; attempt++) {
+      RiseSetContext context = createRiseSetContextForUtcDate(utcDate, latitude, longitude, deltaT);
+      LocalDate transitDate =
+          calcRiseAndSetForDay(
+                  day,
+                  context.dayStartUtc,
+                  latitude,
+                  longitude,
+                  deltaT,
+                  Horizon.SUNRISE_SUNSET.elevation(),
+                  context.params.nuDegrees,
+                  context.params.alphaDeltas,
+                  context.params.m.clone())
+              .transit()
+              .toLocalDate();
+      if (transitDate.equals(localDate)) {
+        return context;
+      }
+      utcDate = transitDate.isAfter(localDate) ? utcDate.minusDays(1) : utcDate.plusDays(1);
     }
-
-    final LocalDate shiftedUtcDate =
-        transitLocalDate.isAfter(localDate) ? localDate.minusDays(1) : localDate.plusDays(1);
-    return createRiseSetContextForUtcDate(shiftedUtcDate, latitude, longitude, deltaT);
+    throw new IllegalStateException("could not select a transit on the requested local date");
   }
 
   private static RiseSetContext createRiseSetContextForUtcDate(
@@ -516,34 +518,6 @@ public final class SPA {
     final ZonedDateTime dayStartUtc = utcDate.atStartOfDay(ZoneOffset.UTC);
     return new RiseSetContext(
         dayStartUtc, calcRiseSetParams(dayStartUtc, latitude, longitude, deltaT));
-  }
-
-  private static LocalDate transitLocalDate(SunriseResult result) {
-    return result.transit().toLocalDate();
-  }
-
-  private static SunriseResult adjustSunriseIfAfterTransit(SunriseResult base) {
-    if (!(base instanceof SunriseResult.RegularDay regular)) {
-      return base;
-    }
-
-    if (regular.transit().getOffset().getTotalSeconds() == 0) {
-      return base;
-    }
-
-    ZonedDateTime sunrise = regular.sunrise();
-    ZonedDateTime transit = regular.transit();
-    ZonedDateTime sunset = regular.sunset();
-
-    if (sunrise.toInstant().isAfter(transit.toInstant())) {
-      sunrise = sunrise.minusDays(1);
-    }
-
-    if (sunset.toInstant().isBefore(transit.toInstant())) {
-      sunset = sunset.plusDays(1);
-    }
-
-    return new SunriseResult.RegularDay(sunrise, transit, sunset);
   }
 
   private static RiseSetParams calcRiseSetParams(
@@ -562,11 +536,12 @@ public final class SPA {
     final double nuDegrees =
         calculateApparentSiderealTimeAtGreenwich(jd, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
 
-    // A.2.2. Calculate the geocentric right ascension and declination at 0 TT for day before, same
-    // day, next day
+    // A.2.2. Sample alpha/delta at 0 TT on D-1, D, D+1, not at 0 UT.
+    // A.2.9 adds deltaT when interpolating these samples to the event time.
+    final double jdTtMidnight = jd.julianDate() - deltaT / 86400.0;
     final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
     for (int i = 0; i < alphaDeltas.length; i++) {
-      JulianDate currentJd = new JulianDate(jd.julianDate() + i - 1, deltaT);
+      JulianDate currentJd = new JulianDate(jdTtMidnight + (i - 1), deltaT);
       double currentJce = currentJd.julianEphemerisCentury();
       double[] currentXTerms = calculateNutationTerms(currentJce);
       DeltaPsiEpsilon currentDeltaPsiEpsilon = calculateDeltaPsiEpsilon(currentJce, currentXTerms);
@@ -579,8 +554,11 @@ public final class SPA {
     }
 
     final double[] m = new double[3];
-    // A.2.3. Calculate the approximate sun transit time, m0, in fraction of day
-    m[0] = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360;
+    // A.2.3: choose the occurrence nearest mean solar noon instead of wrapping
+    // into a UTC day (A.2.7), preserving the solar day across midnight.
+    final double m0 = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360.0;
+    final double meanNoon = 0.5 - longitude / 360.0;
+    m[0] = m0 + floor(meanNoon - m0 + 0.5);
 
     return new RiseSetParams(nuDegrees, alphaDeltas, m);
   }
@@ -605,16 +583,12 @@ public final class SPA {
 
     if (type == Type.NORMAL) {
       final double h0 = acos(acosArg);
-      final double h0Degrees = limitTo(toDegrees(h0), 180.0);
+      final double h0Degrees = toDegrees(h0);
 
-      // A.2.5. Calculate the approximate sunrise time, m1, in fraction of day,
-      m[1] = limitTo(m[0] - h0Degrees / 360.0, 1);
-
-      // A.2.6. Calculate the approximate sunset time, m2, in fraction of day,
-      m[2] = limitTo(m[0] + h0Degrees / 360.0, 1);
+      // A.2.5-6: retain day offsets instead of wrapping each event in A.2.7.
+      m[1] = m[0] - h0Degrees / 360.0;
+      m[2] = m[0] + h0Degrees / 360.0;
     }
-
-    m[0] = limitTo(m[0], 1);
 
     // A.2.8. Calculate the sidereal time at Greenwich, in degrees, for the sun transit, sunrise,
     // and sunset
@@ -702,7 +676,7 @@ public final class SPA {
 
   private static ZonedDateTime addFractionOfDay(
       ZonedDateTime dayStartUtc, ZoneId outputZone, double fraction) {
-    final int millisPlus = (int) (MS_PER_DAY * fraction);
+    final long millisPlus = (long) (MS_PER_DAY * fraction);
     return dayStartUtc.plus(millisPlus, ChronoUnit.MILLIS).withZoneSameInstant(outputZone);
   }
 
