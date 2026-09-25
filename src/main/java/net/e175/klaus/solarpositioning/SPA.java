@@ -3,7 +3,9 @@ package net.e175.klaus.solarpositioning;
 import static java.lang.Math.*;
 import static net.e175.klaus.solarpositioning.MathUtil.*;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -284,9 +286,10 @@ public final class SPA {
    * calculation is based on the astronomical definition of sunrise and sunset, using a refraction
    * correction of -0.8333°.
    *
-   * <p>Transit falls on the requested local date; rise/set events may fall on adjacent dates.
-   * Unlike SPA A.2.7, estimates retain their day offsets around transit rather than wrapping
-   * independently into a UTC day. Interpolation and correction equations are unchanged.
+   * <p>The selected transit is closest to 12:00 on the requested date's local clock (earlier on a
+   * tie). It may fall on an adjacent date; the result describes one solar cycle, not all events in
+   * a civil day. Unlike SPA A.2.7, estimates retain their day offsets around transit rather than
+   * wrapping independently into a UTC day. Interpolation and correction equations are unchanged.
    *
    * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
    *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
@@ -305,7 +308,8 @@ public final class SPA {
 
   private record RiseSetParams(double nuDegrees, AlphaDelta[] alphaDeltas, double[] m) {}
 
-  private record RiseSetContext(ZonedDateTime dayStartUtc, RiseSetParams params) {}
+  private record RiseSetContext(
+      ZonedDateTime dayStartUtc, RiseSetParams params, LocalDateTime transit) {}
 
   /**
    * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
@@ -488,36 +492,50 @@ public final class SPA {
 
   private static RiseSetContext resolveRiseSetContext(
       ZonedDateTime day, double latitude, double longitude, double deltaT) {
-    final LocalDate localDate = day.toLocalDate();
-    LocalDate utcDate = localDate;
-    for (int attempt = 0; attempt < 2; attempt++) {
-      RiseSetContext context = createRiseSetContextForUtcDate(utcDate, latitude, longitude, deltaT);
-      LocalDate transitDate =
-          calcRiseAndSetForDay(
-                  day,
-                  context.dayStartUtc,
-                  latitude,
-                  longitude,
-                  deltaT,
-                  Horizon.SUNRISE_SUNSET.elevation(),
-                  context.params.nuDegrees,
-                  context.params.alphaDeltas,
-                  context.params.m.clone())
-              .transit()
-              .toLocalDate();
-      if (transitDate.equals(localDate)) {
-        return context;
+    // Compare local clock times, so noon need not exist as a timezone instant.
+    // Selecting the closest transit normally requires computing two solar cycles.
+    final LocalDateTime noon = day.toLocalDate().atTime(12, 0);
+    LocalDate utcDate = day.toLocalDate();
+    RiseSetContext context =
+        createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
+    final boolean forward = context.transit.isBefore(noon);
+    while (!context.transit.equals(noon)) {
+      utcDate = forward ? utcDate.plusDays(1) : utcDate.minusDays(1);
+      RiseSetContext next =
+          createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
+      if (next.transit.isBefore(noon) != forward) {
+        // The two transits bracket noon; choose the closer, then the earlier.
+        int comparison =
+            Duration.between(noon, next.transit)
+                .abs()
+                .compareTo(Duration.between(noon, context.transit).abs());
+        return comparison < 0 || (comparison == 0 && next.transit.isBefore(context.transit))
+            ? next
+            : context;
       }
-      utcDate = transitDate.isAfter(localDate) ? utcDate.minusDays(1) : utcDate.plusDays(1);
+      context = next;
     }
-    throw new IllegalStateException("could not select a transit on the requested local date");
+    return context;
   }
 
   private static RiseSetContext createRiseSetContextForUtcDate(
-      LocalDate utcDate, double latitude, double longitude, double deltaT) {
+      LocalDate utcDate, ZonedDateTime day, double latitude, double longitude, double deltaT) {
     final ZonedDateTime dayStartUtc = utcDate.atStartOfDay(ZoneOffset.UTC);
-    return new RiseSetContext(
-        dayStartUtc, calcRiseSetParams(dayStartUtc, latitude, longitude, deltaT));
+    final RiseSetParams params = calcRiseSetParams(dayStartUtc, latitude, longitude, deltaT);
+    final LocalDateTime transit =
+        calcRiseAndSetForDay(
+                day,
+                dayStartUtc,
+                latitude,
+                longitude,
+                deltaT,
+                Horizon.SUNRISE_SUNSET.elevation(),
+                params.nuDegrees,
+                params.alphaDeltas,
+                params.m.clone())
+            .transit()
+            .toLocalDateTime();
+    return new RiseSetContext(dayStartUtc, params, transit);
   }
 
   private static RiseSetParams calcRiseSetParams(

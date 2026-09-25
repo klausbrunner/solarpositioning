@@ -18,6 +18,7 @@ import org.assertj.core.data.TemporalUnitOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class SPASunriseTransitSetTest {
 
@@ -278,6 +279,65 @@ class SPASunriseTransitSetTest {
     assertThat(regular.transit().toLocalDate()).isEqualTo(day.toLocalDate());
     assertThat(regular.sunrise()).isBefore(regular.transit());
     assertThat(regular.transit()).isBefore(regular.sunset());
+  }
+
+  // Eight civil dates without a transit, then two with two transits. The expected
+  // SPA candidate nearest local noon defines the cycle, not an event shifted by 24h.
+  @ParameterizedTest
+  @CsvSource(
+      textBlock =
+          """
+      2020-06-10, 179.9, 2020-06-11T00:00:03.291Z
+      2020-12-24, 179.9, 2020-12-23T23:59:56.717Z
+      2020-06-14, -179.9, 2020-06-15T00:00:05.462Z
+      2020-12-25, -179.9, 2020-12-26T00:00:08.100Z
+      2025-06-10, 179.9, 2025-06-11T00:00:00.776Z
+      2025-12-24, 179.9, 2025-12-23T23:59:49.820Z
+      2025-06-14, -179.9, 2025-06-15T00:00:02.694Z
+      2025-12-25, -179.9, 2025-12-26T00:00:01.383Z
+      2020-04-16, 179.9, 2020-04-16T00:00:12.776Z
+      2020-09-02, 179.9, 2020-09-02T23:59:45.609Z
+      """)
+  void transitSelectionHandlesMissingAndDoubleTransits(
+      LocalDate date, double longitude, ZonedDateTime expected) {
+    for (int offset = -1; offset <= 1; offset++) {
+      ZonedDateTime query = date.plusDays(offset).atStartOfDay(ZoneOffset.UTC);
+      double deltaT = DeltaT.estimate(query.toLocalDate());
+      var results =
+          SPA.calculateSunriseTransitSet(
+              query,
+              0.0,
+              longitude,
+              deltaT,
+              SPA.Horizon.SUNRISE_SUNSET,
+              SPA.Horizon.CIVIL_TWILIGHT);
+      for (var entry : results.entrySet()) {
+        SunriseResult result = entry.getValue();
+        if (offset == 0) {
+          assertThat(result.transit()).isCloseTo(expected, within(1, ChronoUnit.MILLIS));
+        } else {
+          assertThat(result.transit().toLocalDate()).isEqualTo(query.toLocalDate());
+        }
+        assertThat(result)
+            .isEqualTo(
+                SPA.calculateSunriseTransitSet(query, 0.0, longitude, deltaT, entry.getKey()));
+        assertThat(result).isInstanceOf(SunriseResult.RegularDay.class);
+        var regular = (SunriseResult.RegularDay) result;
+        assertThat(regular.sunrise()).isBefore(regular.transit());
+        assertThat(regular.sunset()).isAfter(regular.transit());
+      }
+    }
+  }
+
+  @ParameterizedTest
+  @CsvSource({"2024-03-31, 7200", "2024-10-27, 3600"})
+  void transitSelectionUsesLocalClockAcrossDst(LocalDate date, int offset) {
+    ZonedDateTime query = date.atStartOfDay(ZoneId.of("Europe/Berlin"));
+    SunriseResult result = SPA.calculateSunriseTransitSet(query, 52.0, 13.4, 69.184);
+    assertThat(result.transit().toLocalDate()).isEqualTo(date);
+    assertThat(result.transit().getOffset().getTotalSeconds()).isEqualTo(offset);
+    assertThat(result)
+        .isEqualTo(SPA.calculateSunriseTransitSet(query.plusHours(12), 52.0, 13.4, 69.184));
   }
 
   @Test

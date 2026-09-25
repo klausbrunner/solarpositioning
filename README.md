@@ -110,6 +110,8 @@ mostly matters for bulk calculations.
 
 #### Difference in SPA day wrapping
 
+The API selects the transit closest to 12:00 on the requested date's local clock (earlier on a tie). Transit can fall on an adjacent date; the result describes one solar cycle, not all events in a civil day.
+
 Unlike SPA Appendix A.2.7, this library retains sunrise and sunset estimates’ day offsets around the selected transit instead of wrapping them independently into [0, 1). This avoids using the wrong day’s solar coordinates.
 
 ### What's this "delta T" thing?
