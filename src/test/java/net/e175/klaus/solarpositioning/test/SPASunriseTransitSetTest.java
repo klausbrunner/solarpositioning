@@ -340,6 +340,36 @@ class SPASunriseTransitSetTest {
         .isEqualTo(SPA.calculateSunriseTransitSet(query.plusHours(12), 52.0, 13.4, 69.184));
   }
 
+  @ParameterizedTest
+  @CsvSource({
+    "1867-10-18, America/Adak, 0.0, 1867-10-19T11:45:05.512Z",
+    "1867-10-19, America/Adak, -176.64, 1867-10-18T23:31:44.755Z",
+    "1582-10-04, UTC, 0.0, 1582-10-04T11:46:11.877Z",
+    "1582-10-15, UTC, -180.0, 1582-10-15T23:45:52.632Z"
+  })
+  void transitSelectionHandlesClockRollbacksAndCalendarGaps(
+      LocalDate date, String zone, double longitude, Instant expected) {
+    ZonedDateTime query = date.atTime(12, 0).atZone(ZoneId.of(zone));
+    var results =
+        SPA.calculateSunriseTransitSet(
+            query, 0.0, longitude, 69.184, SPA.Horizon.SUNRISE_SUNSET, SPA.Horizon.CIVIL_TWILIGHT);
+    for (var entry : results.entrySet()) {
+      assertThat(entry.getValue().transit().toInstant())
+          .isCloseTo(expected, within(1, ChronoUnit.MILLIS));
+      assertThat(entry.getValue())
+          .isEqualTo(SPA.calculateSunriseTransitSet(query, 0.0, longitude, 69.184, entry.getKey()));
+    }
+  }
+
+  @Test
+  void rejectsRequestedDateInCalendarGap() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            SPA.calculateSunriseTransitSet(
+                ZonedDateTime.parse("1582-10-10T12:00:00Z"), 0.0, 0.0, 69.184));
+  }
+
   @Test
   void testSillyLatLon() {
     ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));

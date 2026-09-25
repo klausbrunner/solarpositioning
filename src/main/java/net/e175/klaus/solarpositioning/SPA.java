@@ -492,30 +492,39 @@ public final class SPA {
 
   private static RiseSetContext resolveRiseSetContext(
       ZonedDateTime day, double latitude, double longitude, double deltaT) {
-    // Compare local clock times, so noon need not exist as a timezone instant.
-    // Selecting the closest transit normally requires computing two solar cycles.
-    final LocalDateTime noon = day.toLocalDate().atTime(12, 0);
-    LocalDate utcDate = day.toLocalDate();
-    RiseSetContext context =
-        createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
-    final boolean forward = context.transit.isBefore(noon);
-    while (!context.transit.equals(noon)) {
-      utcDate = forward ? utcDate.plusDays(1) : utcDate.minusDays(1);
-      RiseSetContext next =
-          createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
-      if (next.transit.isBefore(noon) != forward) {
-        // The two transits bracket noon; choose the closer, then the earlier.
-        int comparison =
-            Duration.between(noon, next.transit)
-                .abs()
-                .compareTo(Duration.between(noon, context.transit).abs());
-        return comparison < 0 || (comparison == 0 && next.transit.isBefore(context.transit))
-            ? next
-            : context;
-      }
-      context = next;
+    final LocalDate localDate = day.toLocalDate();
+    if (isCalendarGap(localDate)) {
+      throw new IllegalArgumentException("date falls in the Julian/Gregorian calendar gap");
     }
-    return context;
+    // Local clock time can run backwards, so compare candidates without assuming order.
+    // +/-2 UTC dates covers midnight transits and timezone offsets approaching 24 hours.
+    final LocalDateTime noon = localDate.atTime(12, 0);
+    RiseSetContext best =
+        createRiseSetContextForUtcDate(localDate, day, latitude, longitude, deltaT);
+    for (int offset : new int[] {-2, -1, 1, 2}) {
+      LocalDate utcDate = localDate.plusDays(offset);
+      if (isCalendarGap(utcDate)) {
+        continue;
+      }
+      RiseSetContext candidate =
+          createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
+      int comparison =
+          Duration.between(noon, candidate.transit)
+              .abs()
+              .compareTo(Duration.between(noon, best.transit).abs());
+      if (comparison < 0 || (comparison == 0 && candidate.dayStartUtc.isBefore(best.dayStartUtc))) {
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
+  private static boolean isCalendarGap(LocalDate date) {
+    // The Julian/Gregorian cutover used by JulianDate omits 5-14 October 1582.
+    return date.getYear() == 1582
+        && date.getMonthValue() == 10
+        && date.getDayOfMonth() >= 5
+        && date.getDayOfMonth() <= 14;
   }
 
   private static RiseSetContext createRiseSetContextForUtcDate(
