@@ -83,7 +83,38 @@ public final class Grena3 {
       final double temperature) {
     MathUtil.checkLatLonRange(latitude, longitude);
 
-    final double t = calcT(date);
+    var position = position(calcT(date), latitude, longitude, deltaT);
+    final double eP = position.elevationRadians();
+    final double gamma = position.azimuthRadians();
+
+    // refraction correction (disabled for silly parameter values)
+    final boolean doCorrect =
+        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > 0.0;
+
+    final double deltaRe =
+        doCorrect
+            ? (0.08422 * (pressure / 1000))
+                / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
+            : 0.0;
+
+    final double z = PI / 2 - eP - deltaRe;
+
+    return new SolarPosition(MathUtil.limitTo(toDegrees(gamma + PI), 360.0), toDegrees(z));
+  }
+
+  static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
+    // Continuous days from Grena's epoch (2060-01-01). Unlike the rounded 0.0416667*h
+    // calendar formula, this has no tiny time jump at midnight.
+    var position = position(time.julianDate() - 2473459.5, latitude, longitude, time.deltaT());
+    return new SolarEvents.Position(
+        toDegrees(position.elevationRadians()), toDegrees(position.hourAngleRadians()));
+  }
+
+  // Unrefracted angles in radians; azimuth is measured westwards from south.
+  private record Position(
+      double elevationRadians, double azimuthRadians, double hourAngleRadians) {}
+
+  private static Position position(double t, double latitude, double longitude, double deltaT) {
     final double tE = t + 1.1574e-5 * deltaT;
     final double omegaAtE = 0.0172019715 * tE;
 
@@ -125,19 +156,7 @@ public final class Grena3 {
     final double eP = asin(sEpsilon0) - 4.26e-5 * sqrt(1.0 - sEpsilon0 * sEpsilon0);
     final double gamma = atan2(sH, cH * sPhi - (sDelta * cPhi) / cDelta);
 
-    // refraction correction (disabled for silly parameter values)
-    final boolean doCorrect =
-        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > 0.0;
-
-    final double deltaRe =
-        doCorrect
-            ? (0.08422 * (pressure / 1000))
-                / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
-            : 0.0;
-
-    final double z = PI / 2 - eP - deltaRe;
-
-    return new SolarPosition(MathUtil.limitTo(toDegrees(gamma + PI), 360.0), toDegrees(z));
+    return new Position(eP, gamma, H);
   }
 
   private static double calcT(ZonedDateTime date) {

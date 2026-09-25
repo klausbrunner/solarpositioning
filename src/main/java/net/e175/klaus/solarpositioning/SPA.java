@@ -3,19 +3,10 @@ package net.e175.klaus.solarpositioning;
 import static java.lang.Math.*;
 import static net.e175.klaus.solarpositioning.MathUtil.*;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
- * Calculate topocentric solar position and sunrise/sunset/twilight times using the NREL SPA
- * algorithm.
+ * Calculate topocentric solar position using the NREL SPA algorithm.
  *
  * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
  * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
@@ -27,8 +18,6 @@ import java.util.Map;
  */
 public final class SPA {
 
-  private static final int MS_PER_DAY = 24 * 60 * 60 * 1000;
-
   private static final double SUNRISE_SUNSET = -0.83337;
 
   private SPA() {}
@@ -39,27 +28,6 @@ public final class SPA {
    */
   public record SpaTimeDependent(
       double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
-
-  /**
-   * Predefined elevation angles to use in sunrise-sunset calculation. This allows to get twilight
-   * times as well as standard sunrise and sunset.
-   */
-  public enum Horizon {
-    SUNRISE_SUNSET(SPA.SUNRISE_SUNSET),
-    CIVIL_TWILIGHT(-6),
-    NAUTICAL_TWILIGHT(-12),
-    ASTRONOMICAL_TWILIGHT(-18);
-
-    private final double elevation;
-
-    public double elevation() {
-      return elevation;
-    }
-
-    Horizon(double elevation) {
-      this.elevation = elevation;
-    }
-  }
 
   /**
    * Calculate time-dependent parts of the SPA algorithm (steps 1-11). These calculations depend
@@ -76,8 +44,26 @@ public final class SPA {
    */
   public static SpaTimeDependent calculateSpaTimeDependentParts(
       final ZonedDateTime date, final double deltaT) {
-    // calculate Julian (ephemeris) date and millennium
-    final JulianDate jd = new JulianDate(date, deltaT);
+    return calculateSpaTimeDependentParts(new JulianDate(date, deltaT));
+  }
+
+  static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
+    double phi = toRadians(latitude), u = atan(0.99664719 * tan(phi));
+    double sinPhi = sin(phi), cosPhi = cos(phi), x = cos(u), z = 0.99664719 * sin(u);
+    var parts = calculateSpaTimeDependentParts(time);
+    double delta = toRadians(parts.deltaDegrees());
+    double hourAngle = parts.nuDegrees() + longitude - parts.alphaDegrees();
+    double parallax = sin(toRadians(8.794 / (3600 * parts.r())));
+    // SPA's topocentric parallax correction in vector form, stable even at the zenith.
+    double vx = cos(delta) * cos(toRadians(hourAngle)) - x * parallax;
+    double vy = cos(delta) * sin(toRadians(hourAngle));
+    double vz = sin(delta) - z * parallax;
+    double projection = (cosPhi * vx + sinPhi * vz) / sqrt(vx * vx + vy * vy + vz * vz);
+    return new SolarEvents.Position(toDegrees(asin(max(-1.0, min(1.0, projection)))), hourAngle);
+  }
+
+  // Continuous Julian dates let event searches cross calendar boundaries without a clock jump.
+  static SpaTimeDependent calculateSpaTimeDependentParts(final JulianDate jd) {
     final double jme = jd.julianEphemerisMillennium();
     final double jce = jd.julianEphemerisCentury();
 
@@ -273,488 +259,7 @@ public final class SPA {
         date, latitude, longitude, elevation, deltaT, Double.NaN, Double.NaN);
   }
 
-  private enum Type {
-    NORMAL,
-    ALL_DAY,
-    ALL_NIGHT,
-  }
-
   private record AlphaDelta(double alpha, double delta) {}
-
-  /**
-   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
-   * calculation is based on the astronomical definition of sunrise and sunset, using a refraction
-   * correction of -0.8333°.
-   *
-   * <p>The selected transit is closest to 12:00 on the requested date's local clock (earlier on a
-   * tie). It may fall on an adjacent date; the result describes one solar cycle, not all events in
-   * a civil day. Unlike SPA A.2.7, estimates retain their day offsets around transit rather than
-   * wrapping independently into a UTC day. Interpolation and correction equations are unchanged.
-   *
-   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
-   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @return An implementation of {@link SunriseResult} depending on the type of day.
-   */
-  public static SunriseResult calculateSunriseTransitSet(
-      final ZonedDateTime day, final double latitude, final double longitude, final double deltaT) {
-    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, Horizon.SUNRISE_SUNSET);
-  }
-
-  private record RiseSetParams(double nuDegrees, AlphaDelta[] alphaDeltas, double[] m) {}
-
-  private record RiseSetContext(
-      ZonedDateTime dayStartUtc, RiseSetParams params, LocalDateTime transit) {}
-
-  /**
-   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day. The
-   * definition of sunrise or sunset can be chosen based on a horizon type (defined via its
-   * elevation angle).
-   *
-   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
-   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param horizon Horizon (basically, elevation angle) to use as the sunrise/sunset definition.
-   *     This can be used to calculate twilight times.
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @return An implementation of {@link SunriseResult} depending on the type of day.
-   */
-  public static SunriseResult calculateSunriseTransitSet(
-      final ZonedDateTime day,
-      final double latitude,
-      final double longitude,
-      final double deltaT,
-      final Horizon horizon) {
-    return calculateSunriseTransitSet(day, latitude, longitude, deltaT, horizon.elevation());
-  }
-
-  /**
-   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and
-   * horizon types. This is useful to get sunrise/sunset and multiple twilight times in one call and
-   * is expected to be faster than separate calls.
-   *
-   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
-   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param horizons Horizons (basically, elevation angles) to use as the sunrise/sunset definition.
-   *     This can be used to calculate twilight times.
-   * @return A Map with one key-value pair for each unique horizon type and {@link SunriseResult}.
-   *     This map may or may not be mutable.
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   */
-  public static Map<Horizon, SunriseResult> calculateSunriseTransitSet(
-      final ZonedDateTime day,
-      final double latitude,
-      final double longitude,
-      final double deltaT,
-      final Horizon... horizons) {
-    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
-    final Map<Horizon, SunriseResult> result = new HashMap<>(horizons.length + 1, 1);
-
-    for (Horizon horizon : horizons) {
-      checkElevationAngle(horizon.elevation());
-      result.put(
-          horizon,
-          calcRiseAndSetForDay(
-              day,
-              context.dayStartUtc,
-              latitude,
-              longitude,
-              deltaT,
-              horizon.elevation(),
-              context.params.nuDegrees,
-              context.params.alphaDeltas,
-              context.params.m));
-    }
-
-    return Map.copyOf(result);
-  }
-
-  /**
-   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and custom
-   * elevation angle.
-   *
-   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
-   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param elevationAngle Elevation angle in degrees to use as the sunrise/sunset definition.
-   *     Negative values are below the horizon. For reference: standard sunrise/sunset uses
-   *     approximately -0.833°, civil twilight uses -6°, nautical -12°, astronomical -18°.
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @return An implementation of {@link SunriseResult} depending on the type of day.
-   */
-  public static SunriseResult calculateSunriseTransitSet(
-      final ZonedDateTime day,
-      final double latitude,
-      final double longitude,
-      final double deltaT,
-      final double elevationAngle) {
-    checkElevationAngle(elevationAngle);
-    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
-
-    return calcRiseAndSetForDay(
-        day,
-        context.dayStartUtc,
-        latitude,
-        longitude,
-        deltaT,
-        elevationAngle,
-        context.params.nuDegrees,
-        context.params.alphaDeltas,
-        context.params.m);
-  }
-
-  /**
-   * Calculate the times of sunrise, sun transit (solar noon), and sunset for a given day and custom
-   * elevation angles. This is useful to get results for multiple custom elevation angles in one
-   * call and is expected to be faster than separate calls.
-   *
-   * @param day ZonedDateTime representing the day for which sunrise/transit/sunset are to be
-   *     calculated. The time of day (hour, minute, second, millisecond) is ignored.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param elevationAngles Elevation angles in degrees to use as the sunrise/sunset definition.
-   *     Negative values are below the horizon. For reference: standard sunrise/sunset uses
-   *     approximately -0.833°, civil twilight uses -6°, nautical -12°, astronomical -18°.
-   * @return A Map with one key-value pair for each unique elevation angle and {@link
-   *     SunriseResult}. This map may or may not be mutable.
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   */
-  public static Map<Double, SunriseResult> calculateSunriseTransitSet(
-      final ZonedDateTime day,
-      final double latitude,
-      final double longitude,
-      final double deltaT,
-      final double... elevationAngles) {
-    final RiseSetContext context = resolveRiseSetContext(day, latitude, longitude, deltaT);
-    final Map<Double, SunriseResult> result = new HashMap<>(elevationAngles.length + 1, 1);
-
-    for (double elevationAngle : elevationAngles) {
-      checkElevationAngle(elevationAngle);
-      result.put(
-          elevationAngle,
-          calcRiseAndSetForDay(
-              day,
-              context.dayStartUtc,
-              latitude,
-              longitude,
-              deltaT,
-              elevationAngle,
-              context.params.nuDegrees,
-              context.params.alphaDeltas,
-              context.params.m));
-    }
-
-    return Map.copyOf(result);
-  }
-
-  private static SunriseResult calcRiseAndSetForDay(
-      ZonedDateTime day,
-      ZonedDateTime dayStartUtc,
-      double latitude,
-      double longitude,
-      double deltaT,
-      double elevationAngle,
-      double nuDegrees,
-      AlphaDelta[] alphaDeltas,
-      double[] m) {
-    return calcRiseAndSet(
-        dayStartUtc,
-        day.getZone(),
-        longitude,
-        deltaT,
-        elevationAngle,
-        toRadians(latitude),
-        nuDegrees,
-        alphaDeltas,
-        m);
-  }
-
-  private static RiseSetContext resolveRiseSetContext(
-      ZonedDateTime day, double latitude, double longitude, double deltaT) {
-    final LocalDate localDate = day.toLocalDate();
-    if (isCalendarGap(localDate)) {
-      throw new IllegalArgumentException("date falls in the Julian/Gregorian calendar gap");
-    }
-    // Local clock time can run backwards, so compare candidates without assuming order.
-    // +/-2 UTC dates covers midnight transits and timezone offsets approaching 24 hours.
-    final LocalDateTime noon = localDate.atTime(12, 0);
-    RiseSetContext best =
-        createRiseSetContextForUtcDate(localDate, day, latitude, longitude, deltaT);
-    for (int offset : new int[] {-2, -1, 1, 2}) {
-      LocalDate utcDate = localDate.plusDays(offset);
-      if (isCalendarGap(utcDate)) {
-        continue;
-      }
-      RiseSetContext candidate =
-          createRiseSetContextForUtcDate(utcDate, day, latitude, longitude, deltaT);
-      int comparison =
-          Duration.between(noon, candidate.transit)
-              .abs()
-              .compareTo(Duration.between(noon, best.transit).abs());
-      if (comparison < 0 || (comparison == 0 && candidate.dayStartUtc.isBefore(best.dayStartUtc))) {
-        best = candidate;
-      }
-    }
-    return best;
-  }
-
-  private static boolean isCalendarGap(LocalDate date) {
-    // The Julian/Gregorian cutover used by JulianDate omits 5-14 October 1582.
-    return date.getYear() == 1582
-        && date.getMonthValue() == 10
-        && date.getDayOfMonth() >= 5
-        && date.getDayOfMonth() <= 14;
-  }
-
-  private static RiseSetContext createRiseSetContextForUtcDate(
-      LocalDate utcDate, ZonedDateTime day, double latitude, double longitude, double deltaT) {
-    final ZonedDateTime dayStartUtc = utcDate.atStartOfDay(ZoneOffset.UTC);
-    final RiseSetParams params = calcRiseSetParams(dayStartUtc, latitude, longitude, deltaT);
-    final LocalDateTime transit =
-        calcRiseAndSetForDay(
-                day,
-                dayStartUtc,
-                latitude,
-                longitude,
-                deltaT,
-                Horizon.SUNRISE_SUNSET.elevation(),
-                params.nuDegrees,
-                params.alphaDeltas,
-                params.m.clone())
-            .transit()
-            .toLocalDateTime();
-    return new RiseSetContext(dayStartUtc, params, transit);
-  }
-
-  private static RiseSetParams calcRiseSetParams(
-      ZonedDateTime dayStartUtc, double latitude, double longitude, double deltaT) {
-    checkLatLonRange(latitude, longitude);
-
-    final JulianDate jd = new JulianDate(dayStartUtc, deltaT);
-
-    // A.2.1. Calculate the apparent sidereal time at Greenwich at 0 UT, nu (in degrees)
-    final double jce = jd.julianEphemerisCentury();
-    final double[] xTerms = calculateNutationTerms(jce);
-    final DeltaPsiEpsilon deltaPsiEpsilon = calculateDeltaPsiEpsilon(jce, xTerms);
-    final double epsilonDegrees =
-        calculateTrueObliquityOfEcliptic(jd, deltaPsiEpsilon.deltaEpsilon);
-
-    final double nuDegrees =
-        calculateApparentSiderealTimeAtGreenwich(jd, deltaPsiEpsilon.deltaPsi, epsilonDegrees);
-
-    // A.2.2. Sample alpha/delta at 0 TT on D-1, D, D+1, not at 0 UT.
-    // A.2.9 adds deltaT when interpolating these samples to the event time.
-    final double jdTtMidnight = jd.julianDate() - deltaT / 86400.0;
-    final AlphaDelta[] alphaDeltas = new AlphaDelta[3];
-    for (int i = 0; i < alphaDeltas.length; i++) {
-      JulianDate currentJd = new JulianDate(jdTtMidnight + (i - 1), deltaT);
-      double currentJce = currentJd.julianEphemerisCentury();
-      double[] currentXTerms = calculateNutationTerms(currentJce);
-      DeltaPsiEpsilon currentDeltaPsiEpsilon = calculateDeltaPsiEpsilon(currentJce, currentXTerms);
-      double currentEpsilonDegrees =
-          calculateTrueObliquityOfEcliptic(currentJd, currentDeltaPsiEpsilon.deltaEpsilon);
-      double currentJme = currentJd.julianEphemerisMillennium();
-      AlphaDelta ad =
-          calculateAlphaDelta(currentJme, currentDeltaPsiEpsilon.deltaPsi, currentEpsilonDegrees);
-      alphaDeltas[i] = ad;
-    }
-
-    final double[] m = new double[3];
-    // A.2.3: choose the occurrence nearest mean solar noon instead of wrapping
-    // into a UTC day (A.2.7), preserving the solar day across midnight.
-    final double m0 = (alphaDeltas[1].alpha - longitude - nuDegrees) / 360.0;
-    final double meanNoon = 0.5 - longitude / 360.0;
-    m[0] = m0 + floor(meanNoon - m0 + 0.5);
-
-    return new RiseSetParams(nuDegrees, alphaDeltas, m);
-  }
-
-  private static SunriseResult calcRiseAndSet(
-      ZonedDateTime dayStartUtc,
-      ZoneId outputZone,
-      double longitude,
-      double deltaT,
-      double elevationAngle,
-      double phi,
-      double nuDegrees,
-      AlphaDelta[] alphaDeltas,
-      double[] m) {
-    // A.2.4. Calculate the local hour angle H0 corresponding to ...
-    final double acosArg =
-        (sin(toRadians(elevationAngle)) - sin(phi) * sin(toRadians(alphaDeltas[1].delta)))
-            / (cos(phi) * cos(toRadians(alphaDeltas[1].delta)));
-
-    final Type type =
-        acosArg < -1.0 ? Type.ALL_DAY : (acosArg > 1.0 ? Type.ALL_NIGHT : Type.NORMAL);
-
-    if (type == Type.NORMAL) {
-      final double h0 = acos(acosArg);
-      final double h0Degrees = toDegrees(h0);
-
-      // A.2.5-6: retain day offsets instead of wrapping each event in A.2.7.
-      m[1] = m[0] - h0Degrees / 360.0;
-      m[2] = m[0] + h0Degrees / 360.0;
-    }
-
-    // A.2.8. Calculate the sidereal time at Greenwich, in degrees, for the sun transit, sunrise,
-    // and sunset
-    final int count = (type == Type.NORMAL) ? m.length : 1;
-    final double[] nu = new double[count];
-    for (int i = 0; i < count; i++) {
-      nu[i] = nuDegrees + 360.985647 * m[i];
-    }
-
-    // A.2.9. Calculate the terms ni
-    final double[] n = new double[count];
-    for (int i = 0; i < count; i++) {
-      n[i] = m[i] + deltaT / 86400.0;
-    }
-
-    // A.2.10. Calculate the values alpha'i and delta'i , in degrees
-    final double a = limitIfNecessary(alphaDeltas[1].alpha - alphaDeltas[0].alpha);
-    final double aPrime = limitIfNecessary(alphaDeltas[1].delta - alphaDeltas[0].delta);
-
-    final double b = limitIfNecessary(alphaDeltas[2].alpha - alphaDeltas[1].alpha);
-    final double bPrime = limitIfNecessary(alphaDeltas[2].delta - alphaDeltas[1].delta);
-
-    final double c = b - a;
-    final double cPrime = bPrime - aPrime;
-
-    final AlphaDelta[] alphaDeltaPrimes = new AlphaDelta[count];
-    for (int i = 0; i < alphaDeltaPrimes.length; i++) {
-      double alphaPrimeI = alphaDeltas[1].alpha + (n[i] * (a + b + c * n[i])) / 2.0;
-      double deltaPrimeI = alphaDeltas[1].delta + (n[i] * (aPrime + bPrime + cPrime * n[i])) / 2.0;
-
-      alphaDeltaPrimes[i] = new AlphaDelta(alphaPrimeI, deltaPrimeI);
-    }
-
-    // A.2.11. Calculate the local hour angle for the sun transit, sunrise, and sunset
-    final double[] hPrime = new double[count];
-    for (int i = 0; i < hPrime.length; i++) {
-      double hPrimeI = nu[i] + longitude - alphaDeltaPrimes[i].alpha;
-      hPrime[i] = limitHprime(hPrimeI);
-    }
-
-    // A.2.12. Calculate the sun altitude for the sun transit, sunrise, and sunset, hi
-    final double[] h = new double[count];
-    for (int i = 0; i < h.length; i++) {
-      double deltaPrimeRad = toRadians(alphaDeltaPrimes[i].delta);
-
-      h[i] =
-          toDegrees(
-              asin(
-                  sin(phi) * sin(deltaPrimeRad)
-                      + cos(phi) * cos(deltaPrimeRad) * cos(toRadians(hPrime[i]))));
-    }
-
-    // A.2.13. Calculate the sun transit, T (in fraction of day)
-    final double t = m[0] - hPrime[0] / 360.0;
-
-    if (type != Type.NORMAL) {
-      return (type == Type.ALL_DAY)
-          ? new SunriseResult.AllDay(addFractionOfDay(dayStartUtc, outputZone, t))
-          : new SunriseResult.AllNight(addFractionOfDay(dayStartUtc, outputZone, t));
-    }
-
-    // A.2.14. Calculate the sunrise, R (in fraction of day)
-    final double r =
-        m[1]
-            + (h[1] - elevationAngle)
-                / (360.0
-                    * cos(toRadians(alphaDeltaPrimes[1].delta))
-                    * cos(phi)
-                    * sin(toRadians(hPrime[1])));
-
-    // A.2.15. Calculate the sunset, S (in fraction of day)
-    final double s =
-        m[2]
-            + (h[2] - elevationAngle)
-                / (360.0
-                    * cos(toRadians(alphaDeltaPrimes[2].delta))
-                    * cos(phi)
-                    * sin(toRadians(hPrime[2])));
-
-    return new SunriseResult.RegularDay(
-        addFractionOfDay(dayStartUtc, outputZone, r),
-        addFractionOfDay(dayStartUtc, outputZone, t),
-        addFractionOfDay(dayStartUtc, outputZone, s));
-  }
-
-  private static ZonedDateTime addFractionOfDay(
-      ZonedDateTime dayStartUtc, ZoneId outputZone, double fraction) {
-    final long millisPlus = (long) (MS_PER_DAY * fraction);
-    return dayStartUtc.plus(millisPlus, ChronoUnit.MILLIS).withZoneSameInstant(outputZone);
-  }
-
-  /** limit H' values according to A.2.11 */
-  private static double limitHprime(double hPrime) {
-    hPrime /= 360.0;
-    final double limited = 360.0 * (hPrime - floor(hPrime));
-
-    if (limited < -180.0) {
-      return limited + 360.0;
-    } else if (limited > 180.0) {
-      return limited - 360.0;
-    } else {
-      return limited;
-    }
-  }
-
-  /** Limit to 0..1 if absolute value > 2. Refer to A.2.10 in NREL report. */
-  private static double limitIfNecessary(double val) {
-    return (abs(val) > 2.0) ? limitTo(val, 1.0) : val;
-  }
-
-  private static AlphaDelta calculateAlphaDelta(
-      double jme, double deltaPsi, double epsilonDegrees) {
-    // calculate Earth heliocentric latitude, B
-    final double bDegrees = lbrToNormalizedDegrees(jme, TERMS_B);
-
-    // calculate Earth radius vector, R
-    final double r = calculateLBRPolynomial(jme, TERMS_R);
-    assert r != 0;
-
-    // calculate Earth heliocentric longitude, L
-    final double lDegrees = lbrToNormalizedDegrees(jme, TERMS_L);
-
-    // calculate geocentric longitude, theta
-    final double thetaDegrees = limitTo(lDegrees + 180, 360);
-
-    // calculate geocentric latitude, beta
-    final double betaDegrees = -bDegrees;
-    final double beta = toRadians(betaDegrees);
-    final double epsilon = toRadians(epsilonDegrees);
-
-    // calculate aberration correction
-    final double deltaTau = -20.4898 / (3600 * r);
-
-    // calculate the apparent sun longitude
-    final double lambdaDegrees = thetaDegrees + deltaPsi + deltaTau;
-    final double lambda = toRadians(lambdaDegrees);
-
-    return calculateGeocentricSunCoordinates(beta, epsilon, lambda);
-  }
 
   private static SolarPosition calculateTopocentricSolarPosition(
       final double p,
