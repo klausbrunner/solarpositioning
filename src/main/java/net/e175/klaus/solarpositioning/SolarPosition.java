@@ -16,4 +16,9 @@ public record SolarPosition(double azimuth, double zenithAngle) {
           "illegal value %.3f for zenithAngle".formatted(zenithAngle));
     }
   }
+
+  /** Returns elevation in degrees, positive above the horizon. */
+  public double elevation() {
+    return 90.0 - zenithAngle;
+  }
 }

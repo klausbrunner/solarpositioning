@@ -1,15 +1,13 @@
 package net.e175.klaus.solarpositioning;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 
 /**
- * Calculate Julian date for a given point in time. This follows the algorithm described in Reda,
- * I.; Andreas, A. (2003): Solar Position Algorithm for Solar Radiation Applications. NREL Report
- * No. TP-560-34302, Revised January 2008.
+ * Continuous UT Julian date and TT minus UT1 (delta T), in seconds.
  *
- * @author Klaus Brunner
+ * <p>Java timestamps use the proleptic Gregorian calendar, including before 1582. UTC approximates
+ * UT1. Ephemeris time includes delta T.
  */
 public record JulianDate(double julianDate, double deltaT) {
   /**
@@ -31,37 +29,30 @@ public record JulianDate(double julianDate, double deltaT) {
    *     For the years 2023–2028, a reasonably accurate default would be 69.
    */
   public JulianDate(final ZonedDateTime date, final double deltaT) {
-    this(calcJulianDate(createUtcDateTime(date).toLocalDateTime()), deltaT);
+    this(date.toInstant(), deltaT);
   }
 
-  static ZonedDateTime createUtcDateTime(final ZonedDateTime fromDateTime) {
-    return fromDateTime.withZoneSameInstant(ZoneOffset.UTC);
+  /**
+   * Constructs a Julian date from an instant, assuming delta T is zero.
+   *
+   * @param time instant of observation
+   */
+  public JulianDate(Instant time) {
+    this(time, 0.0);
   }
 
-  private static double calcJulianDate(LocalDateTime localDateTime) {
-    int y = localDateTime.getYear();
-    int m = localDateTime.getMonthValue();
+  /**
+   * Constructs a Julian date from an instant and delta T.
+   *
+   * @param time instant of observation; UTC approximates UT1
+   * @param deltaT TT minus UT1, in seconds
+   */
+  public JulianDate(Instant time, double deltaT) {
+    this(toJulianDate(time), deltaT);
+  }
 
-    if (m < 3) {
-      y = y - 1;
-      m = m + 12;
-    }
-
-    final double d =
-        localDateTime.getDayOfMonth()
-            + (localDateTime.getHour()
-                    + (localDateTime.getMinute()
-                            + (localDateTime.getSecond()
-                                    + localDateTime.getNano() / 1_000_000_000.0)
-                                / 60.0)
-                        / 60.0)
-                / 24.0;
-    final double jd =
-        Math.floor(365.25 * (y + 4716.0)) + Math.floor(30.6001 * (m + 1)) + d - 1524.5;
-    final double a = Math.floor(y / 100.0);
-    final double b = jd > 2299160.0 ? (2.0 - a + Math.floor(a / 4.0)) : 0.0;
-
-    return jd + b;
+  static double toJulianDate(Instant time) {
+    return 2440587.5 + time.getEpochSecond() / 86400.0 + time.getNano() / 86400e9;
   }
 
   public double julianEphemerisDay() {

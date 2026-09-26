@@ -4,13 +4,13 @@
 [![javadoc](https://javadoc.io/badge2/net.e175.klaus/solarpositioning/javadoc.svg)](https://javadoc.io/doc/net.e175.klaus/solarpositioning)
 
 A Java library for finding topocentric solar coordinates, i.e. the sun’s position on the sky for a given date,
-latitude, and longitude (and other parameters), as well as times of sunrise and sunset. Calculations strictly follow
+latitude, and longitude (and other parameters), as well as times of sunrise, transit, and sunset. Position calculations follow
 well-known, peer-reviewed algorithms: [SPA](http://dx.doi.org/10.1016/j.solener.2003.12.003) by Reda and Andreas and,
 alternatively, [Grena/ENEA](http://dx.doi.org/10.1016/j.solener.2012.01.024) by Grena. More than 1000 test points are
-included to validate against the reference code and other sources.
+included to validate against the reference code and other sources. Solar events are found by searching positions from the chosen algorithm, with SPA as the default.
 
 > [!NOTE]
-> This library is **not** based on or derived from any code published by NREL, ENEA or other parties. It implements the algorithms as described in the respective papers, with minimal adjustments documented below.
+> This library is **not** based on or derived from any code published by NREL, ENEA or other parties. It implements the position algorithms as described in the respective papers.
 
 ## Usage
 
@@ -20,9 +20,11 @@ included to validate against the reference code and other sources.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>2.1.2</version>
+    <version>3.0.0</version>
 </dependency>
 ```
+
+Note that version 3 introduced major breaking changes in the API. Older 2.x versions remain available for download, but will not be maintained.
 
 ### Requirements
 
@@ -30,95 +32,136 @@ Java 17 or newer. No additional runtime dependencies.
 
 ### Code
 
-The API is intentionally "flat", comprising a handful of static methods and simple records as results.
+`SolarPositions` and `SolarEvents` are immutable, reusable calculators. Both default to SPA and return simple records.
 To get refraction-corrected topocentric coordinates:
 
 ```java
 var dateTime = ZonedDateTime.now();
 
-// replace SPA with Grena3 as needed
-var position = SPA.calculateSolarPosition(
+var positions = new SolarPositions();
+var position = positions.at(
     dateTime,
     48.21, // latitude (degrees)
     16.37, // longitude (degrees)
-    190, // elevation (m)
+    190, // height above sea level (m)
     DeltaT.estimate(dateTime.toLocalDate()), // delta T (s)
-    1010, // avg. air pressure (hPa)
-    11); // avg. air temperature (°C)
+    new Atmosphere(1010, 11)); // local pressure (hPa), temperature (°C)
 
 System.out.println(position);
+System.out.println(position.elevation());
 ```
 
-The SPA class includes methods to calculate the times of sunrise, sun transit, and sunset in one fell swoop. The actual 
-return type depends on the type of day (regular day, polar day, polar night).
+`at` accepts either a `ZonedDateTime` or an `Instant`. Positions and events use the
+proleptic Gregorian calendar, including before 1582; UTC approximates UT1.
+Omit the atmosphere for an unrefracted position, and omit height to assume sea level.
+Use `SolarPositions.grena3()` for Grena3, which requires zero height.
+
+`SolarEvents` defaults to SPA positions. Its `forDate` method returns every sunrise, transit and sunset in a local calendar date:
 
 ```java
-var result=SPA.calculateSunriseTransitSet(
-        dateTime,
-        70.978, // latitude  
-        25.974, // longitude
-        69); // delta T
+var date = LocalDate.of(2026, 9, 25);
+var calculator = new SolarEvents();
+var events = calculator.forDate(
+    date, ZoneId.of("Europe/Vienna"),
+    48.21, 16.37, DeltaT.estimate(date));
 
-if(result instanceof SunriseResult.RegularDay regular) {
-    System.out.println(regular);
-} else {
-    System.out.println("no sunrise or sunset today!");    
+System.out.println(events.rises());
+System.out.println(events.transits());
+System.out.println(events.sets());
+System.out.println(events.alwaysAbove()); // continuous daylight
+System.out.println(events.alwaysBelow()); // continuous night
+```
+
+To use Grena3 for events, create the calculator with `SolarEvents.grena3()`.
+Grena3 is faster but less accurate, and supports only 2010–2110.
+A custom solar model can implement the single-method `SolarEvents.PositionProvider` interface
+and be passed to `new SolarEvents(provider, firstYear, lastYear)`. It supplies unrefracted
+elevation and local hour angle; the event search and result types stay the same.
+
+Each immutable list can be empty or contain several events. Returned times use the requested
+zone and lie within the date, including its start and excluding the following date. This also
+handles clock changes and skipped dates. `stateAtStart()` describes the Sun relative to the
+selected horizon. A state within numerical tolerance of the horizon is `ON_HORIZON`.
+
+Pass a horizon for twilight or a numeric elevation for a custom crossing.
+Use `forDateMultiple` for a map of results, sharing transit across horizons:
+
+```java
+var twilight = calculator.forDate(date, ZoneId.of("Europe/Vienna"),
+    48.21, 16.37, DeltaT.estimate(date), SolarEvents.Horizon.CIVIL_TWILIGHT);
+var all = calculator.forDateMultiple(date, ZoneId.of("Europe/Vienna"),
+    48.21, 16.37, DeltaT.estimate(date), SolarEvents.Horizon.values());
+var custom = calculator.forDateMultiple(date, ZoneId.of("Europe/Vienna"),
+    48.21, 16.37, DeltaT.estimate(date), -4.5, -10.0);
+```
+
+For an arbitrary interval, `nextRise`, `nextSet` and `nextTransit` return `Optional<Instant>`.
+Searches exclude `start` and include `end`; pass a returned instant as the next start to
+continue. Rise and set accept either a `Horizon` or a custom elevation in degrees:
+
+```java
+var start = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+var end = start.plus(Duration.ofDays(30));
+var nextRise = calculator.nextRise(start, end,
+    78.22, 15.63, DeltaT.estimate(date), SolarEvents.Horizon.SUNRISE_SUNSET);
+```
+
+Events are independent: a date need not contain a transit or a rise/set pair.
+
+For positions at many locations at the same time, prepare the time-dependent calculations once.
+This works with both SPA and Grena3:
+
+```java
+var snapshot = positions.forTime(dateTime, deltaT);
+for (var coordinate : coordinates) {
+    var position = snapshot.at(coordinate.lat, coordinate.lon, coordinate.elevation);
 }
 ```
 
-Twilight start and end times can be obtained like sunrise and sunset, but assuming a different horizon:
+`forTime` accepts a `ZonedDateTime` or an `Instant`. The returned `SolarPositions.AtTime`
+is immutable and thread-safe, with the same optional height and `Atmosphere` arguments as `at`.
 
-```java
-var result=SPA.calculateSunriseTransitSet(
-        dateTime,
-        70.978, // latitude  
-        25.974, // longitude
-        69, // delta T
-        SPA.Horizon.CIVIL_TWILIGHT); 
-```
-
-For bulk position processing at a fixed time with many coordinates using SPA, use the optimized split methods for significantly better performance:
-
-```java
-// Compute time-dependent parts once
-final var timeDependent = SPA.calculateSpaTimeDependentParts(dateTime, deltaT);
-
-// Reuse for multiple coordinates (up to 10x faster)
-for(var coordinate: coordinates) {
-    var position = SPA.calculateSolarPositionWithTimeDependentParts(
-        coordinate.lat, coordinate.lon, coordinate.elevation, timeDependent);
-}
-```
 See the Javadoc for more methods.
 
 ### Which position algorithm should I use?
 
-* For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from
+- For many applications, Grena3 should work just fine. It's simple, fast, and pretty accurate for a time window from
   2010 to 2110 CE.
-* If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
+- If you're looking for maximum accuracy or need to calculate for historic dates, use SPA. It's widely considered a
   reference algorithm for solar positioning, being very accurate and usable in a very large time window.
 
-While Grena3 is about an order of magnitude faster than SPA, in absolute terms we are talking about microseconds. The difference
-mostly matters for bulk calculations.
+While Grena3 is about an order of magnitude faster than SPA, in absolute terms we are talking about microseconds. The difference mostly matters for bulk calculations.
 
-### Sunrise/sunset accuracy notes
+### Solar event accuracy
 
-- Sunrise and sunset use the standard solar-centre elevation of −0.833° (50 arcminutes below the geometric horizon), accounting for average atmospheric refraction and the Sun's apparent radius.
-- Atmospheric variability limits the accuracy of predicted observed sunrise/sunset times: differences of a minute or more are possible, especially where the Sun crosses the horizon at a shallow angle ([USNO](https://aa.usno.navy.mil/faq/RST_defs)).
-- SPA's sunrise/sunset and twilight calculations become less reliable near seasonal transitions where the Sun barely crosses the selected horizon.
-- Days with only a rising or setting event are not reliably supported by SPA.
+`SolarEvents` searches unrefracted topocentric solar-centre positions at sea level
+from the chosen model, defaulting to SPA.
+Sunrise and sunset occur when the Sun's centre is 50 arcminutes (about 0.833°) below the
+geometric horizon, allowing for average atmospheric refraction and the Sun's apparent radius.
+Twilight and custom elevations use exactly the selected geometric angle, without an
+additional refraction correction.
 
-#### Difference in SPA day wrapping
+Crossing brackets are refined to one millisecond, date assignment has the same resolution.
+This is numerical precision, not observed-event accuracy. The position model's angular
+uncertainty matters more at shallow crossings, and weather and terrain can shift observed sunrise by minutes
+([USNO](https://aa.usno.navy.mil/faq/RST_defs)). A tangency alone is not a crossing, and events
+less than one millisecond apart need not be distinguished.
 
-The API selects the transit closest to 12:00 on the requested date's local clock (earlier on a tie). Transit can fall on an adjacent date; the result describes one solar cycle, not all events in a civil day.
+Event searches use a continuous proleptic Gregorian calendar. Both UT and TT must remain
+within the model's supported years: -2000 through 6000 for SPA, 2010 through 2110 for Grena3.
+UTC approximates UT1; ΔT is held constant during each query.
 
-Unlike SPA Appendix A.2.7, this library retains sunrise and sunset estimates’ day offsets around the selected transit instead of wrapping them independently into [0, 1). This avoids using the wrong day’s solar coordinates.
+The search combines interval subdivision, standard [interpolation error bounds](https://dlmf.nist.gov/3.3.E5)
+and [ITP refinement](https://doi.org/10.1145/3423597). A conservative estimate of the curve's bending comes from daily rotation, with extra room for slower solar motion. It is an engineering choice checked against
+reference data and edge cases, not a formal guarantee for every input.
+[Astronomy Engine](https://github.com/cosinekitty/astronomy/blob/master/source/js/astronomy.ts)
+uses related adaptive-search ideas, with a speed limit rather than curvature.
 
 ### What's this "delta T" thing?
 
-See [Wikipedia](https://en.wikipedia.org/wiki/ΔT_(timekeeping)) for an explanation. For many simple applications, and particularly for sunrise and sunset,
-this value could be negligible as it's just over a minute (about 70 seconds) as of this writing. However, if you're 
-looking for maximum accuracy, you should use an observed value (available from e.g. the US Naval 
+See [Wikipedia](<https://en.wikipedia.org/wiki/ΔT_(timekeeping)>) for an explanation. For many simple applications, and particularly for sunrise and sunset,
+this value could be negligible as it's just over a minute (about 70 seconds) as of this writing. However, if you're
+looking for maximum accuracy, you should use an observed value (available from e.g. the US Naval
 Observatory) or at least a solid estimate.
 
 `DeltaT.estimate()` uses polynomials originally published by [Espenak and Meeus](http://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html)
