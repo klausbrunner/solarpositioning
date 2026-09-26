@@ -280,6 +280,21 @@ class SolarEventsTest {
     }
   }
 
+  @Test
+  void grenaSearchHandlesZenithRoundoff() {
+    Instant start = Instant.parse("2024-01-13T00:00:00Z");
+    Instant end = start.plusSeconds(86400);
+    // These coordinates put the Sun at the zenith at the search midpoint.
+    double latitude = -21.51229285091162, longitude = 2.1219181064613295;
+    Instant rise =
+        SolarEvents.grena3()
+            .nextRise(start, end, latitude, longitude, DELTA_T, Horizon.SUNRISE_SUNSET)
+            .orElseThrow();
+    assertThat(rise).isAfter(start).isBefore(end);
+    checkGrenaCrossing(
+        rise.atZone(ZoneOffset.UTC), latitude, longitude, Horizon.SUNRISE_SUNSET.elevation(), 1);
+  }
+
   private static void checkGrenaCrossing(
       ZonedDateTime time, double latitude, double longitude, double horizon, int direction) {
     // The existing position API's rounded hours-to-days constant shifts time by up to 69 ms.

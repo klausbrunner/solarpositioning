@@ -534,7 +534,7 @@ public final class SolarEvents {
         return Double.NaN;
       }
       if (a < 0.0 && b >= 0.0 && slope > slopeError) {
-        return bisect(start, end);
+        return refine(start, end, a, b);
       }
       if (width <= TIME_TOLERANCE) {
         return a < 0.0 && b > 0.0 ? end : Double.NaN;
@@ -545,15 +545,37 @@ public final class SolarEvents {
       return Double.isNaN(left) ? find(middle, end, m, b) : left;
     }
 
-    double bisect(double start, double end) {
-      while (end - start > TIME_TOLERANCE) {
-        double middle = start + (end - start) / 2.0;
-        if (value(middle) > 0.0) {
-          end = middle;
-        } else {
-          start = middle;
-        }
+    double refine(double start, double end, double a, double b) {
+      // ITP (Oliveira & Takahashi): https://doi.org/10.1145/3423597.
+      // Use k1 = 0.2 / initial width, k2 = 2, n0 = 1. The projection allows
+      // at most one extra iteration over bisection while favouring interpolation.
+      double scale = 0.2 / (end - start);
+      // Maximum remaining width after a step; halve the allowance each time.
+      double maxWidth = TIME_TOLERANCE;
+      while (maxWidth < end - start) {
+        maxWidth *= 2.0;
       }
+      while (end - start > TIME_TOLERANCE) {
+        double width = end - start;
+        double middle = start + width / 2.0;
+        // Equal values can occur on a rounded zero; use the midpoint then.
+        double interpolated = a == b ? middle : start - a * width / (b - a);
+        double towardsMiddle = middle - interpolated;
+        double truncated =
+            interpolated + copySign(min(scale * width * width, abs(towardsMiddle)), towardsMiddle);
+        double radius = max(0.0, maxWidth - width / 2.0);
+        double trial = middle + max(-radius, min(radius, truncated - middle));
+        double value = value(trial);
+        if (value > 0.0) {
+          end = trial;
+          b = value;
+        } else {
+          start = trial;
+          a = value;
+        }
+        maxWidth /= 2.0;
+      }
+      // Keep the later endpoint, so the next search cannot rediscover this crossing.
       return end;
     }
   }

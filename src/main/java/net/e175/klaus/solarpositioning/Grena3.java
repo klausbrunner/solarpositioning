@@ -152,7 +152,8 @@ public final class Grena3 {
     final double sH = sin(H);
     final double cH = cos(H);
 
-    final double sEpsilon0 = sPhi * sDelta + cPhi * cDelta * cH;
+    // Roundoff can put the sine just outside [-1, 1] at the zenith or nadir.
+    final double sEpsilon0 = max(-1.0, min(1.0, sPhi * sDelta + cPhi * cDelta * cH));
     final double eP = asin(sEpsilon0) - 4.26e-5 * sqrt(1.0 - sEpsilon0 * sEpsilon0);
     final double gamma = atan2(sH, cH * sPhi - (sDelta * cPhi) / cDelta);
 

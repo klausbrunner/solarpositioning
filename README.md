@@ -128,8 +128,7 @@ While Grena3 is about an order of magnitude faster than SPA, in absolute terms w
 ### Solar event accuracy
 
 `SolarEvents` searches positions from the chosen model, defaulting to SPA, instead of using
-SPA Appendix A.2's rise/set approximation. It uses unrefracted topocentric solar-centre
-positions at sea level.
+SPA Appendix A.2's rise/set approximation as in previous versions of this library. It uses unrefracted topocentric solar-centre positions at sea level.
 Sunrise and sunset occur when the Sun's centre is 50 arcminutes (about 0.833°) below the
 geometric horizon, allowing for average atmospheric refraction and the Sun's apparent radius.
 Twilight and custom elevations use exactly the selected geometric angle, without an
@@ -146,8 +145,7 @@ within the model's supported years: -2000 through 6000 for SPA, 2010 through 211
 UTC approximates UT1; ΔT is held constant during each query.
 
 The search combines interval subdivision, standard [interpolation error bounds](https://dlmf.nist.gov/3.3.E5)
-and bisection. A conservative estimate of the curve's bending comes from daily rotation,
-with extra room for slower solar motion. It is an engineering choice checked against
+and [ITP refinement](https://doi.org/10.1145/3423597). A conservative estimate of the curve's bending comes from daily rotation, with extra room for slower solar motion. It is an engineering choice checked against
 reference data and edge cases, not a formal guarantee for every input.
 [Astronomy Engine](https://github.com/cosinekitty/astronomy/blob/master/source/js/astronomy.ts)
 uses related adaptive-search ideas, with a speed limit rather than curvature.
