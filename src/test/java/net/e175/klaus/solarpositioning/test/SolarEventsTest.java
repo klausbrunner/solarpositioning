@@ -7,10 +7,9 @@ import java.time.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import net.e175.klaus.solarpositioning.DeltaT;
-import net.e175.klaus.solarpositioning.Grena3;
-import net.e175.klaus.solarpositioning.SPA;
 import net.e175.klaus.solarpositioning.SolarEvents;
 import net.e175.klaus.solarpositioning.SolarEvents.Horizon;
+import net.e175.klaus.solarpositioning.SolarPositions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -18,6 +17,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SolarEventsTest {
+  private static final SolarPositions SPA_POSITIONS = new SolarPositions();
+  private static final SolarPositions GRENA_POSITIONS = SolarPositions.grena3();
   private static final SolarEvents EVENTS = new SolarEvents();
   private static final double DELTA_T = 69.184;
 
@@ -141,9 +142,7 @@ class SolarEventsTest {
   }
 
   private static double altitude(Instant time, double latitude, double longitude) {
-    return 90
-        - SPA.calculateSolarPosition(time.atZone(ZoneOffset.UTC), latitude, longitude, 0, DELTA_T)
-            .zenithAngle();
+    return SPA_POSITIONS.at(time, latitude, longitude, DELTA_T).elevation();
   }
 
   private static void checkCrossing(
@@ -195,7 +194,7 @@ class SolarEventsTest {
   @Test
   void batchesHorizonsWithIndependentStatesAndImmutableResults() {
     LocalDate date = LocalDate.of(2024, 12, 21);
-    var days = EVENTS.forDate(date, ZoneOffset.UTC, 70, 0, DELTA_T, Horizon.values());
+    var days = EVENTS.forDateMultiple(date, ZoneOffset.UTC, 70, 0, DELTA_T, Horizon.values());
     var night = days.get(Horizon.SUNRISE_SUNSET);
     var twilight = days.get(Horizon.CIVIL_TWILIGHT);
     assertThat(days).hasSize(4);
@@ -204,9 +203,15 @@ class SolarEventsTest {
     assertThat(twilight.rises()).hasSize(1);
     assertThat(twilight.sets()).hasSize(1);
     assertThat(twilight.transits()).isEqualTo(night.transits()).hasSize(1);
-    var custom = EVENTS.forDate(date, ZoneOffset.UTC, 70, 0, DELTA_T, -6, -6, -4.5);
+    var custom = EVENTS.forDateMultiple(date, ZoneOffset.UTC, 70, 0, DELTA_T, -6, -6, -4.5);
     assertThat(custom).hasSize(2);
     assertThat(custom.get(-6.0)).isEqualTo(twilight);
+    assertThat(EVENTS.forDateMultiple(date, ZoneOffset.UTC, 70, 0, DELTA_T, -6.0))
+        .containsOnlyKeys(-6.0)
+        .containsEntry(-6.0, twilight);
+    assertThat(EVENTS.forDateMultiple(date, ZoneOffset.UTC, 70, 0, DELTA_T, Horizon.CIVIL_TWILIGHT))
+        .containsOnlyKeys(Horizon.CIVIL_TWILIGHT)
+        .containsEntry(Horizon.CIVIL_TWILIGHT, twilight);
     assertThat(custom.get(-4.5))
         .isEqualTo(EVENTS.forDate(date, ZoneOffset.UTC, 70, 0, DELTA_T, -4.5));
     assertThrows(UnsupportedOperationException.class, days::clear);
@@ -217,7 +222,8 @@ class SolarEventsTest {
 
   @Test
   void extremeHorizonsHaveNoCrossings() {
-    var days = EVENTS.forDate(LocalDate.of(2024, 3, 20), ZoneOffset.UTC, 0, 0, DELTA_T, -90, 90);
+    var days =
+        EVENTS.forDateMultiple(LocalDate.of(2024, 3, 20), ZoneOffset.UTC, 0, 0, DELTA_T, -90, 90);
     assertThat(days.get(-90.0).alwaysAbove()).isTrue();
     assertThat(days.get(90.0).alwaysBelow()).isTrue();
   }
@@ -232,6 +238,18 @@ class SolarEventsTest {
       start = transit;
     }
     assertThat(EVENTS.nextTransit(start, end, 0, DELTA_T)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"1500-03-20", "1582-10-04", "1582-10-15"})
+  void historicalEventsMatchPositions(LocalDate date) {
+    double latitude = 48.21, longitude = 16.37;
+    double horizon = Horizon.SUNRISE_SUNSET.elevation();
+    var day = EVENTS.forDate(date, ZoneOffset.UTC, latitude, longitude, DELTA_T);
+    assertThat(day.rises()).hasSize(1);
+    assertThat(day.sets()).hasSize(1);
+    checkCrossing(day.rises().get(0).toInstant(), latitude, longitude, horizon, 1);
+    checkCrossing(day.sets().get(0).toInstant(), latitude, longitude, horizon, -1);
   }
 
   @Test
@@ -259,16 +277,15 @@ class SolarEventsTest {
       LocalDate date, double latitude, double longitude, int rises, int sets, int transits) {
     var days =
         SolarEvents.grena3()
-            .forDate(date, ZoneOffset.UTC, latitude, longitude, DELTA_T, Horizon.values());
+            .forDateMultiple(date, ZoneOffset.UTC, latitude, longitude, DELTA_T, Horizon.values());
     var standard = days.get(Horizon.SUNRISE_SUNSET);
     assertThat(standard.rises()).hasSize(rises);
     assertThat(standard.sets()).hasSize(sets);
     assertThat(standard.transits()).hasSize(transits);
     for (var time : standard.transits()) {
       // At the equator the eastward component changes sign at upper transit.
-      var before =
-          Grena3.calculateSolarPosition(time.minusNanos(100_000_000), 0, longitude, DELTA_T);
-      var after = Grena3.calculateSolarPosition(time.plusNanos(100_000_000), 0, longitude, DELTA_T);
+      var before = GRENA_POSITIONS.at(time.minusNanos(2_000_000), 0, longitude, DELTA_T);
+      var after = GRENA_POSITIONS.at(time.plusNanos(2_000_000), 0, longitude, DELTA_T);
       assertThat(Math.sin(Math.toRadians(before.azimuth()))).isPositive();
       assertThat(Math.sin(Math.toRadians(after.azimuth()))).isNegative();
     }
@@ -297,18 +314,10 @@ class SolarEventsTest {
 
   private static void checkGrenaCrossing(
       ZonedDateTime time, double latitude, double longitude, double horizon, int direction) {
-    // The existing position API's rounded hours-to-days constant shifts time by up to 69 ms.
-    // Event searches use continuous Julian time; allow 100 ms when comparing the two paths.
     double before =
-        90
-            - Grena3.calculateSolarPosition(
-                    time.minusNanos(100_000_000), latitude, longitude, DELTA_T)
-                .zenithAngle();
+        GRENA_POSITIONS.at(time.minusNanos(2_000_000), latitude, longitude, DELTA_T).elevation();
     double after =
-        90
-            - Grena3.calculateSolarPosition(
-                    time.plusNanos(100_000_000), latitude, longitude, DELTA_T)
-                .zenithAngle();
+        GRENA_POSITIONS.at(time.plusNanos(2_000_000), latitude, longitude, DELTA_T).elevation();
     assertThat(direction * (before - horizon)).isNegative();
     assertThat(direction * (after - horizon)).isPositive();
   }

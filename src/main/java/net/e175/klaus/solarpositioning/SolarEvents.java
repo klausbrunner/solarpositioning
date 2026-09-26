@@ -1,6 +1,7 @@
 package net.e175.klaus.solarpositioning;
 
 import static java.lang.Math.*;
+import static net.e175.klaus.solarpositioning.JulianDate.toJulianDate;
 import static net.e175.klaus.solarpositioning.MathUtil.*;
 
 import java.time.*;
@@ -219,7 +220,7 @@ public final class SolarEvents {
       double longitude,
       double deltaT,
       double elevationAngle) {
-    return forDate(date, zone, latitude, longitude, deltaT, new double[] {elevationAngle})
+    return forDateMultiple(date, zone, latitude, longitude, deltaT, elevationAngle)
         .get(elevationAngle);
   }
 
@@ -234,7 +235,7 @@ public final class SolarEvents {
    * @param horizons selected sunrise or twilight horizons; duplicates are ignored
    * @return an immutable map, one result per distinct horizon
    */
-  public Map<Horizon, Day> forDate(
+  public Map<Horizon, Day> forDateMultiple(
       LocalDate date,
       ZoneId zone,
       double latitude,
@@ -242,7 +243,7 @@ public final class SolarEvents {
       double deltaT,
       Horizon... horizons) {
     var days =
-        forDate(
+        forDateMultiple(
             date,
             zone,
             latitude,
@@ -266,7 +267,7 @@ public final class SolarEvents {
    *     ignored
    * @return an immutable map, one result per distinct elevation
    */
-  public Map<Double, Day> forDate(
+  public Map<Double, Day> forDateMultiple(
       LocalDate date,
       ZoneId zone,
       double latitude,
@@ -282,7 +283,8 @@ public final class SolarEvents {
     double initialAltitude =
         sin(
             toRadians(
-                position(julianDate(start.toInstant()), latitude, longitude, deltaT).elevation()));
+                position(toJulianDate(start.toInstant()), latitude, longitude, deltaT)
+                    .elevation()));
     Map<Double, Day> result = new HashMap<>();
     for (double elevation : elevationAngles) {
       result.computeIfAbsent(
@@ -479,7 +481,7 @@ public final class SolarEvents {
     // when the caller uses it as the next search's start.
     var search =
         new CrossingSearch(
-            t -> position.applyAsDouble(julianDate(at(start, end, t, hours))), curvature);
+            t -> position.applyAsDouble(toJulianDate(at(start, end, t, hours))), curvature);
     double crossing = search.find(0.0, hours, search.value(0.0), search.value(hours));
     if (Double.isNaN(crossing)) {
       return Optional.empty();
@@ -493,13 +495,13 @@ public final class SolarEvents {
     }
     if (beforeRange(start, deltaT)
         || end.isAfter(maxTime)
-        || julianDate(end) + deltaT / 86400.0 > julianDate(maxTime)) {
+        || toJulianDate(end) + deltaT / 86400.0 > toJulianDate(maxTime)) {
       throw new IllegalArgumentException("search interval outside provider's supported years");
     }
   }
 
   private boolean beforeRange(Instant time, double deltaT) {
-    return time.isBefore(minTime) || julianDate(time) + deltaT / 86400.0 < julianDate(minTime);
+    return time.isBefore(minTime) || toJulianDate(time) + deltaT / 86400.0 < toJulianDate(minTime);
   }
 
   private static Instant at(Instant start, Instant end, double hours, double durationHours) {
@@ -510,10 +512,6 @@ public final class SolarEvents {
     Instant time =
         start.plusSeconds(wholeSeconds).plusNanos((long) ((seconds - wholeSeconds) * 1e9));
     return time.isAfter(end) ? end : time;
-  }
-
-  private static double julianDate(Instant time) {
-    return 2440587.5 + time.getEpochSecond() / 86400.0 + time.getNano() / 86400e9;
   }
 
   private record CrossingSearch(DoubleUnaryOperator function, double curvature) {

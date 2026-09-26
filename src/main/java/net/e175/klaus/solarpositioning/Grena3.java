@@ -2,9 +2,6 @@ package net.e175.klaus.solarpositioning;
 
 import static java.lang.Math.*;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-
 /**
  * Calculate topocentric solar position using the ENEA/Grena algorithm.
  *
@@ -16,74 +13,16 @@ import java.time.ZonedDateTime;
  *
  * @author Klaus Brunner
  */
-public final class Grena3 {
+final class Grena3 {
 
   private Grena3() {}
 
-  /**
-   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
-   * time on a certain point of the Earth's surface.
-   *
-   * <p>This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the
-   * computation of sun position from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-   *
-   * <p>The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01
-   * degrees.
-   *
-   * <p>This method does not perform refraction correction.
-   *
-   * @param date Observer's local date and time.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @return Topocentric solar position (azimuth measured eastward from north)
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see SolarPosition
-   */
-  public static SolarPosition calculateSolarPosition(
-      final ZonedDateTime date,
-      final double latitude,
-      final double longitude,
-      final double deltaT) {
-    return calculateSolarPosition(date, latitude, longitude, deltaT, Double.NaN, Double.NaN);
-  }
+  record TimeDependent(double siderealTime, double alpha, double sinDelta, double cosDelta) {}
 
-  /**
-   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
-   * time on a certain point of the Earth's surface.
-   *
-   * <p>This follows the no. 3 algorithm described in Grena, 'Five new algorithms for the
-   * computation of sun position from 2010 to 2110', Solar Energy 86 (2012) pp. 1323-1337.
-   *
-   * <p>The algorithm is supposed to work for the years 2010 to 2110, with a maximum error of 0.01
-   * degrees.
-   *
-   * @param date Observer's local date and time.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param pressure Annual average local pressure, in millibars (or hectopascals). Used for
-   *     refraction correction of zenith angle. If unsure, 1000 is a reasonable default.
-   * @param temperature Annual average local temperature, in degrees Celsius. Used for refraction
-   *     correction of zenith angle.
-   * @return Topocentric solar position (azimuth measured eastward from north)
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see SolarPosition
-   */
-  public static SolarPosition calculateSolarPosition(
-      final ZonedDateTime date,
-      final double latitude,
-      final double longitude,
-      final double deltaT,
-      final double pressure,
-      final double temperature) {
+  static SolarPosition calculateSolarPositionWithTimeDependentParts(
+      double latitude, double longitude, double pressure, double temperature, TimeDependent parts) {
     MathUtil.checkLatLonRange(latitude, longitude);
-
-    var position = position(calcT(date), latitude, longitude, deltaT);
+    var position = position(parts, latitude, longitude);
     final double eP = position.elevationRadians();
     final double gamma = position.azimuthRadians();
 
@@ -103,9 +42,8 @@ public final class Grena3 {
   }
 
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
-    // Continuous days from Grena's epoch (2060-01-01). Unlike the rounded 0.0416667*h
-    // calendar formula, this has no tiny time jump at midnight.
-    var position = position(time.julianDate() - 2473459.5, latitude, longitude, time.deltaT());
+    var parts = calculateTimeDependentParts(time);
+    var position = position(parts, latitude, longitude);
     return new SolarEvents.Position(
         toDegrees(position.elevationRadians()), toDegrees(position.hourAngleRadians()));
   }
@@ -114,8 +52,10 @@ public final class Grena3 {
   private record Position(
       double elevationRadians, double azimuthRadians, double hourAngleRadians) {}
 
-  private static Position position(double t, double latitude, double longitude, double deltaT) {
-    final double tE = t + 1.1574e-5 * deltaT;
+  static TimeDependent calculateTimeDependentParts(JulianDate time) {
+    // Continuous days from Grena's epoch (2060-01-01), avoiding the rounded calendar formula.
+    final double t = time.julianDate() - 2473459.5;
+    final double tE = t + 1.1574e-5 * time.deltaT();
     final double omegaAtE = 0.0172019715 * tE;
 
     final double lambda =
@@ -138,7 +78,13 @@ public final class Grena3 {
 
     final double delta = asin(sLambda * sEpsilon);
 
-    double H = 1.7528311 + 6.300388099 * t + toRadians(longitude) - alpha;
+    final double sDelta = sin(delta);
+    final double cDelta = sqrt(1 - sDelta * sDelta);
+    return new TimeDependent(1.7528311 + 6.300388099 * t, alpha, sDelta, cDelta);
+  }
+
+  private static Position position(TimeDependent parts, double latitude, double longitude) {
+    double H = parts.siderealTime() + toRadians(longitude) - parts.alpha();
     H = ((H + PI) % (2 * PI)) - PI;
     if (H < -PI) {
       H += 2 * PI;
@@ -147,8 +93,8 @@ public final class Grena3 {
     // end of "short procedure"
     final double sPhi = sin(toRadians(latitude));
     final double cPhi = sqrt(1 - sPhi * sPhi);
-    final double sDelta = sin(delta);
-    final double cDelta = sqrt(1 - sDelta * sDelta);
+    final double sDelta = parts.sinDelta();
+    final double cDelta = parts.cosDelta();
     final double sH = sin(H);
     final double cH = cos(H);
 
@@ -158,29 +104,5 @@ public final class Grena3 {
     final double gamma = atan2(sH, cH * sPhi - (sDelta * cPhi) / cDelta);
 
     return new Position(eP, gamma, H);
-  }
-
-  private static double calcT(ZonedDateTime date) {
-    ZonedDateTime utc = date.withZoneSameInstant(ZoneOffset.UTC);
-
-    int m = utc.getMonthValue();
-    int y = utc.getYear();
-    final int d = utc.getDayOfMonth();
-    final double h =
-        utc.getHour()
-            + utc.getMinute() / 60d
-            + (utc.getSecond() + utc.getNano() / 1_000_000_000d) / (60d * 60);
-
-    if (m <= 2) {
-      m += 12;
-      y -= 1;
-    }
-
-    return (floor(365.25 * (y - 2000))
-        + floor(30.6001 * (m + 1))
-        - floor(0.01 * y)
-        + d
-        + 0.0416667 * h
-        - 21958);
   }
 }

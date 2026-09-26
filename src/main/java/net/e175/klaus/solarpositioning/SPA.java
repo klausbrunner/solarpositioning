@@ -3,8 +3,6 @@ package net.e175.klaus.solarpositioning;
 import static java.lang.Math.*;
 import static net.e175.klaus.solarpositioning.MathUtil.*;
 
-import java.time.ZonedDateTime;
-
 /**
  * Calculate topocentric solar position using the NREL SPA algorithm.
  *
@@ -16,7 +14,7 @@ import java.time.ZonedDateTime;
  *
  * @author Klaus Brunner
  */
-public final class SPA {
+final class SPA {
 
   private static final double SUNRISE_SUNSET = -0.83337;
 
@@ -26,26 +24,7 @@ public final class SPA {
    * Time-dependent intermediate values from SPA calculation (steps 1-11). These values depend only
    * on the datetime and can be computed once and reused for multiple coordinates.
    */
-  public record SpaTimeDependent(
-      double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
-
-  /**
-   * Calculate time-dependent parts of the SPA algorithm (steps 1-11). These calculations depend
-   * only on the date/time and can be computed once for bulk processing at a fixed time with varying
-   * coordinates. Use with {@link #calculateSolarPositionWithTimeDependentParts} for significant
-   * performance improvements when calculating positions for multiple coordinates at the same time.
-   *
-   * @param date Observer's local date and time.
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @return Time-dependent intermediate values for use with {@link
-   *     #calculateSolarPositionWithTimeDependentParts}
-   */
-  public static SpaTimeDependent calculateSpaTimeDependentParts(
-      final ZonedDateTime date, final double deltaT) {
-    return calculateSpaTimeDependentParts(new JulianDate(date, deltaT));
-  }
+  record SpaTimeDependent(double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
 
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
     double phi = toRadians(latitude), u = atan(0.99664719 * tan(phi));
@@ -129,7 +108,7 @@ public final class SPA {
    * @throws IllegalArgumentException for nonsensical latitude/longitude
    * @see SolarPosition
    */
-  public static SolarPosition calculateSolarPositionWithTimeDependentParts(
+  static SolarPosition calculateSolarPositionWithTimeDependentParts(
       final double latitude,
       final double longitude,
       final double elevation,
@@ -168,97 +147,6 @@ public final class SPA {
     return calculateTopocentricSolarPosition(pressure, temperature, phi, deltaPrime, hPrime);
   }
 
-  /**
-   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
-   * time on a certain point of the Earth's surface.
-   *
-   * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
-   * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
-   * The algorithm is supposed to work for the years -2000 to 6000, with uncertainties of +/-0.0003
-   * degrees.
-   *
-   * @param date Observer's local date and time.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param elevation Observer's elevation, in meters.
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @param pressure Annual average local pressure, in millibars (or hectopascals). Used for
-   *     refraction correction of zenith angle. If unsure, 1000 is a reasonable default.
-   * @param temperature Annual average local temperature, in degrees Celsius. Used for refraction
-   *     correction of zenith angle.
-   * @return Topocentric solar position (azimuth measured eastward from north)
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see SolarPosition
-   */
-  public static SolarPosition calculateSolarPosition(
-      final ZonedDateTime date,
-      final double latitude,
-      final double longitude,
-      final double elevation,
-      final double deltaT,
-      final double pressure,
-      final double temperature) {
-    final SpaTimeDependent timeDependent = calculateSpaTimeDependentParts(date, deltaT);
-    return calculateSolarPositionWithTimeDependentParts(
-        latitude, longitude, elevation, pressure, temperature, timeDependent);
-  }
-
-  /**
-   * Calculate topocentric solar position using pre-computed time-dependent parts. This method does
-   * not perform refraction correction.
-   *
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param elevation Observer's elevation, in meters.
-   * @param timeDependent Pre-computed time-dependent calculations from {@link
-   *     #calculateSpaTimeDependentParts}
-   * @return Topocentric solar position (azimuth measured eastward from north)
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see SolarPosition
-   */
-  public static SolarPosition calculateSolarPositionWithTimeDependentParts(
-      final double latitude,
-      final double longitude,
-      final double elevation,
-      final SpaTimeDependent timeDependent) {
-    return calculateSolarPositionWithTimeDependentParts(
-        latitude, longitude, elevation, Double.NaN, Double.NaN, timeDependent);
-  }
-
-  /**
-   * Calculate topocentric solar position: the location of the sun on the sky for a certain point in
-   * time on a certain point of the Earth's surface.
-   *
-   * <p>This follows the SPA algorithm described in Reda, I.; Andreas, A. (2003): Solar Position
-   * Algorithm for Solar Radiation Applications. NREL Report No. TP-560-34302, Revised January 2008.
-   * The algorithm is supposed to work for the years -2000 to 6000, with uncertainties of +/-0.0003
-   * degrees.
-   *
-   * <p>This method does not perform refraction correction.
-   *
-   * @param date Observer's local date and time.
-   * @param latitude Observer's latitude, in degrees (negative south of equator).
-   * @param longitude Observer's longitude, in degrees (negative west of Greenwich).
-   * @param elevation Observer's elevation, in meters.
-   * @param deltaT Difference between earth rotation time and terrestrial time (or Universal Time
-   *     and Terrestrial Time), in seconds. See {@link JulianDate#JulianDate(ZonedDateTime, double)}
-   *     and {@link DeltaT}.
-   * @return Topocentric solar position (azimuth measured eastward from north)
-   * @throws IllegalArgumentException for nonsensical latitude/longitude
-   * @see SolarPosition
-   */
-  public static SolarPosition calculateSolarPosition(
-      final ZonedDateTime date,
-      final double latitude,
-      final double longitude,
-      final double elevation,
-      final double deltaT) {
-    return calculateSolarPosition(
-        date, latitude, longitude, elevation, deltaT, Double.NaN, Double.NaN);
-  }
-
   private record AlphaDelta(double alpha, double delta) {}
 
   private static SolarPosition calculateTopocentricSolarPosition(
@@ -272,7 +160,9 @@ public final class SPA {
     final double cosPhi = cos(phi);
     final double cosHPrime = cos(hPrime);
 
-    final double eZero = asin(sinPhi * sin(deltaPrime) + cosPhi * cos(deltaPrime) * cosHPrime);
+    // Roundoff can put the sine just outside [-1, 1] at the zenith or nadir.
+    final double sinElevation = sinPhi * sin(deltaPrime) + cosPhi * cos(deltaPrime) * cosHPrime;
+    final double eZero = asin(max(-1.0, min(1.0, sinElevation)));
     final double topocentricZenithAngle = calculateTopocentricZenithAngle(p, t, eZero);
 
     // Calculate the topocentric azimuth angle

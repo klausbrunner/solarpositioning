@@ -1,95 +1,57 @@
 package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import net.e175.klaus.solarpositioning.JulianDate;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class JulianDateTest {
-
   private static final double TOLERANCE = 0.0000001;
 
-  @Test
-  void testConstructor() {
-    JulianDate julDate = new JulianDate(ZonedDateTime.now());
-    assertNotNull(julDate);
+  @ParameterizedTest
+  @CsvSource({
+    "-4713-11-24T12:00:00Z,0.0",
+    "-0123-12-28T00:00:00Z,1676496.5",
+    "-0123-12-29T00:00:00Z,1676497.5",
+    "0837-04-14T07:12:00Z,2026871.8",
+    "1582-10-04T00:00:00Z,2299149.5",
+    "1582-10-15T00:00:00Z,2299160.5",
+    "1970-01-01T00:00:00Z,2440587.5",
+    "2000-01-01T12:00:00Z,2451545.0"
+  })
+  void usesProlepticGregorianDates(ZonedDateTime time, double expected) {
+    assertEquals(expected, new JulianDate(time).julianDate(), TOLERANCE);
+    assertEquals(new JulianDate(time), new JulianDate(time.toInstant()));
+    assertEquals(new JulianDate(time, 69.184), new JulianDate(time.toInstant(), 69.184));
   }
 
   @Test
-  void testWithTimeZone() {
-    // 17 October 2003, 12:30:30-07:00
-    ZoneId zone = ZoneOffset.ofHours(-7);
-    ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, zone);
-
-    JulianDate julDate = new JulianDate(time);
-
-    assertEquals(2452930.312847222, julDate.julianDate(), TOLERANCE);
-  }
-
-  @Test
-  void testY2K() {
-    ZonedDateTime utcTime = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC);
-
-    JulianDate julDate = new JulianDate(utcTime);
-
-    assertEquals(2451545.0, julDate.julianDate(), TOLERANCE);
+  void usesTheInstantAcrossTimeZones() {
+    var time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+    var julianDate = new JulianDate(time);
+    assertEquals(2452930.312847222, julianDate.julianDate(), TOLERANCE);
+    assertEquals(julianDate, new JulianDate(time.withZoneSameInstant(ZoneOffset.UTC)));
   }
 
   @Test
   void preservesSubSecondPrecision() {
-    ZonedDateTime start = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC);
-    ZonedDateTime halfSecondLater = start.plusNanos(500_000_000);
-
+    var start = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC);
+    var halfSecondLater = start.plusNanos(500_000_000);
     double elapsedJulianDays =
         new JulianDate(halfSecondLater).julianDate() - new JulianDate(start).julianDate();
-
     assertEquals(0.5 / 86_400, elapsedJulianDays, 1e-9);
   }
 
   @Test
-  void testPre1000() {
-    ZonedDateTime utcTime = ZonedDateTime.of(837, 4, 10, 7, 12, 0, 0, ZoneOffset.UTC);
-
-    JulianDate julDate = new JulianDate(utcTime);
-
-    assertEquals(2026871.8, julDate.julianDate(), TOLERANCE);
-  }
-
-  @Test
-  void testPre0() {
-    ZonedDateTime utcTime = ZonedDateTime.of(-123, 12, 31, 0, 0, 0, 0, ZoneOffset.UTC);
-
-    JulianDate julDate = new JulianDate(utcTime);
-
-    assertEquals(1676496.5, julDate.julianDate(), TOLERANCE);
-  }
-
-  @Test
-  void testPre02() {
-    ZonedDateTime utcTime = ZonedDateTime.of(-122, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-
-    JulianDate julDate = new JulianDate(utcTime);
-
-    assertEquals(1676497.5, julDate.julianDate(), TOLERANCE);
-  }
-
-  @Test
-  void testJulian0() {
-    ZonedDateTime utcTime = ZonedDateTime.of(-4712, 1, 1, 12, 0, 0, 0, ZoneOffset.UTC);
-
-    JulianDate julDate = new JulianDate(utcTime);
-
-    assertEquals(0.0, julDate.julianDate(), TOLERANCE);
-  }
-
-  @Test
-  void testJulianDays() {
-    JulianDate jd = new JulianDate(2452929.500000, 0);
-    assertEquals(0.03790554, jd.julianCentury(), TOLERANCE);
-    assertEquals(0.00379056, jd.julianEphemerisMillennium(), TOLERANCE);
+  void calculatesTimeScales() {
+    var time = new JulianDate(2452929.5, 69.184);
+    assertEquals(2452929.5 + 69.184 / 86400, time.julianEphemerisDay(), TOLERANCE);
+    assertEquals(0.03790554, time.julianCentury(), TOLERANCE);
+    assertEquals(0.03790556607143789, time.julianEphemerisCentury(), TOLERANCE);
+    assertEquals(0.003790556607143789, time.julianEphemerisMillennium(), TOLERANCE);
   }
 }
