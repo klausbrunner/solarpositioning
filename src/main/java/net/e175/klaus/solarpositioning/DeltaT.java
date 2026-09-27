@@ -3,6 +3,7 @@ package net.e175.klaus.solarpositioning;
 import static net.e175.klaus.solarpositioning.MathUtil.polynomial;
 
 import java.time.LocalDate;
+import java.time.temporal.TemporalAccessor;
 
 /**
  * Estimate values for Delta T, the difference between Terrestrial Time (TT) and Universal Time
@@ -29,6 +30,19 @@ public final class DeltaT {
   public static double estimate(final LocalDate forDate) {
     final double year = decimalYear(forDate);
     return estimate(year);
+  }
+
+  /**
+   * Estimate Delta T from a temporal value containing a date, such as a LocalDateTime,
+   * OffsetDateTime, or ZonedDateTime. Uses the local calendar date without converting time zones.
+   *
+   * @param forDate temporal value containing a date
+   * @return estimated delta T value (seconds)
+   * @throws java.time.DateTimeException if the value does not contain a date
+   * @see #estimate(LocalDate)
+   */
+  public static double estimate(final TemporalAccessor forDate) {
+    return estimate(LocalDate.from(forDate));
   }
 
   /**

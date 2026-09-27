@@ -3,7 +3,10 @@ package net.e175.klaus.solarpositioning.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import net.e175.klaus.solarpositioning.DeltaT;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,6 +15,17 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class DeltaTTest {
+
+  @Test
+  void testDateTimeInputsUseLocalDate() {
+    final LocalDate date = LocalDate.of(2026, 1, 1);
+    final double expected = DeltaT.estimate(date);
+    final var dateTime = date.atTime(0, 30);
+    assertEquals(expected, DeltaT.estimate(dateTime));
+    assertEquals(expected, DeltaT.estimate(dateTime.atOffset(ZoneOffset.ofHours(14))));
+    assertEquals(expected, DeltaT.estimate(dateTime.atZone(ZoneOffset.ofHours(14))));
+    assertThrows(DateTimeException.class, () -> DeltaT.estimate(LocalTime.NOON));
+  }
 
   private LocalDate yearCal(int year) {
     return LocalDate.of(year, 1, 1);
