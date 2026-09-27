@@ -5,33 +5,43 @@ import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
- * Calculates topocentric solar positions, using SPA by default.
+ * Calculates topocentric solar positions. Use {@link #spa()} for SPA or {@link #grena3()} for
+ * Grena3.
  *
  * <p>Instances are immutable and reusable. Overloads without height assume sea level; overloads
  * without an atmosphere omit refraction correction. Delta T is always supplied explicitly. Both
  * {@link Instant} and {@link ZonedDateTime} are accepted, using the proleptic Gregorian calendar
  * and UTC as an approximation to UT1.
  *
- * <p>Calculation validity follows the selected model: SPA is designed for years -2000 through 6000,
- * and Grena3 for 2010 through 2110. Use {@link #forTime(ZonedDateTime, double)} to reuse
+ * <p>SPA supports years -2000 through 6000, and Grena3 supports 2010 through 2110. Both UT and TT
+ * must stay within the selected model's range. Use {@link #forTime(ZonedDateTime, double)} to reuse
  * time-dependent calculations across multiple locations.
  */
 public final class SolarPositions {
   private enum Algorithm {
-    SPA,
-    GRENA3
+    SPA(-2000, 6000),
+    GRENA3(2010, 2110);
+
+    private final TimeRange range;
+
+    Algorithm(int firstYear, int lastYear) {
+      range = new TimeRange(firstYear, lastYear);
+    }
   }
+
+  private static final SolarPositions SPA_INSTANCE = new SolarPositions(Algorithm.SPA);
+  private static final SolarPositions GRENA3_INSTANCE = new SolarPositions(Algorithm.GRENA3);
 
   private final Algorithm algorithm;
 
-  /** Creates a reusable position calculator using SPA. */
-  public SolarPositions() {
-    this(Algorithm.SPA);
+  /** Returns the shared, immutable position calculator using SPA. */
+  public static SolarPositions spa() {
+    return SPA_INSTANCE;
   }
 
-  /** Creates a reusable position calculator using Grena3. */
+  /** Returns the shared, immutable position calculator using Grena3. */
   public static SolarPositions grena3() {
-    return new SolarPositions(Algorithm.GRENA3);
+    return GRENA3_INSTANCE;
   }
 
   private SolarPositions(Algorithm algorithm) {
@@ -46,7 +56,8 @@ public final class SolarPositions {
    * @param longitude longitude in degrees, positive east
    * @param deltaT TT minus UT1 in seconds
    * @return solar azimuth and zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates or non-finite delta T
+   * @throws IllegalArgumentException for invalid coordinates, non-finite delta T, or a time outside
+   *     the model's supported range
    * @throws NullPointerException if time is null
    */
   public SolarPosition at(ZonedDateTime time, double latitude, double longitude, double deltaT) {
@@ -61,7 +72,8 @@ public final class SolarPositions {
    * @param longitude longitude in degrees, positive east
    * @param deltaT TT minus UT1 in seconds
    * @return solar azimuth and zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates or non-finite delta T
+   * @throws IllegalArgumentException for invalid coordinates, non-finite delta T, or a time outside
+   *     the model's supported range
    * @throws NullPointerException if time is null
    * @see #at(ZonedDateTime, double, double, double)
    */
@@ -78,7 +90,8 @@ public final class SolarPositions {
    * @param deltaT TT minus UT1 in seconds
    * @param atmosphere pressure and temperature for the model's refraction correction
    * @return solar azimuth and corrected zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates or non-finite delta T
+   * @throws IllegalArgumentException for invalid coordinates, non-finite delta T, or a time outside
+   *     the model's supported range
    * @throws NullPointerException if time or atmosphere is null
    */
   public SolarPosition at(
@@ -95,7 +108,8 @@ public final class SolarPositions {
    * @param deltaT TT minus UT1 in seconds
    * @param atmosphere pressure and temperature for the model's refraction correction
    * @return solar azimuth and corrected zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates or non-finite delta T
+   * @throws IllegalArgumentException for invalid coordinates, non-finite delta T, or a time outside
+   *     the model's supported range
    * @throws NullPointerException if time or atmosphere is null
    * @see #at(ZonedDateTime, double, double, double, Atmosphere)
    */
@@ -113,8 +127,8 @@ public final class SolarPositions {
    * @param height height above sea level in metres; may be negative, but must be zero for Grena3
    * @param deltaT TT minus UT1 in seconds
    * @return solar azimuth and zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, or
-   *     nonzero height with Grena3
+   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, nonzero
+   *     height with Grena3, or a time outside the model's supported range
    * @throws NullPointerException if time is null
    */
   public SolarPosition at(
@@ -131,8 +145,8 @@ public final class SolarPositions {
    * @param height height above sea level in metres; may be negative, but must be zero for Grena3
    * @param deltaT TT minus UT1 in seconds
    * @return solar azimuth and zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, or
-   *     nonzero height with Grena3
+   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, nonzero
+   *     height with Grena3, or a time outside the model's supported range
    * @throws NullPointerException if time is null
    * @see #at(ZonedDateTime, double, double, double, double)
    */
@@ -151,8 +165,8 @@ public final class SolarPositions {
    * @param deltaT TT minus UT1 in seconds
    * @param atmosphere pressure and temperature for the model's refraction correction
    * @return solar azimuth and corrected zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, or
-   *     nonzero height with Grena3
+   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, nonzero
+   *     height with Grena3, or a time outside the model's supported range
    * @throws NullPointerException if time or atmosphere is null
    */
   public SolarPosition at(
@@ -175,8 +189,8 @@ public final class SolarPositions {
    * @param deltaT TT minus UT1 in seconds
    * @param atmosphere pressure and temperature for the model's refraction correction
    * @return solar azimuth and corrected zenith angle in degrees
-   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, or
-   *     nonzero height with Grena3
+   * @throws IllegalArgumentException for invalid coordinates, non-finite height or delta T, nonzero
+   *     height with Grena3, or a time outside the model's supported range
    * @throws NullPointerException if time or atmosphere is null
    * @see #at(ZonedDateTime, double, double, double, double, Atmosphere)
    */
@@ -196,7 +210,8 @@ public final class SolarPositions {
    * @param time observer's date and time
    * @param deltaT TT minus UT1 in seconds
    * @return an immutable calculator for locations at this time
-   * @throws IllegalArgumentException for non-finite delta T
+   * @throws IllegalArgumentException for non-finite delta T or a time outside the model's supported
+   *     range
    * @throws NullPointerException if time is null
    */
   public AtTime forTime(ZonedDateTime time, double deltaT) {
@@ -209,7 +224,8 @@ public final class SolarPositions {
    * @param time instant of observation
    * @param deltaT TT minus UT1 in seconds
    * @return an immutable calculator for locations at this instant
-   * @throws IllegalArgumentException for non-finite delta T
+   * @throws IllegalArgumentException for non-finite delta T or a time outside the model's supported
+   *     range
    * @throws NullPointerException if time is null
    * @see #forTime(ZonedDateTime, double)
    */
@@ -217,6 +233,9 @@ public final class SolarPositions {
     Objects.requireNonNull(time, "time");
     if (!Double.isFinite(deltaT)) {
       throw new IllegalArgumentException("deltaT must be finite");
+    }
+    if (!algorithm.range.contains(time, deltaT)) {
+      throw new IllegalArgumentException("time outside model's supported years");
     }
     var julianDate = new JulianDate(time, deltaT);
     return switch (algorithm) {

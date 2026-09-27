@@ -10,7 +10,8 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
 /**
- * Searches for solar events using a position provider, defaulting to SPA.
+ * Searches for solar events using a position provider. Use {@link #spa()} for SPA or {@link
+ * #grena3()} for Grena3.
  *
  * <p>The {@code nextRise}, {@code nextSet} and {@code nextTransit} searches run forwards, excluding
  * {@code start} and including {@code end}. An empty result means the requested crossing does not
@@ -36,18 +37,21 @@ public final class SolarEvents {
   // Conservative allowance for Julian-date quantisation and floating-point evaluation.
   private static final double ROUNDING_ERROR = 1e-8;
 
-  private final PositionProvider provider;
-  private final Instant minTime;
-  private final Instant maxTime;
+  private static final SolarEvents SPA_INSTANCE = new SolarEvents(SPA::eventPosition, -2000, 6000);
+  private static final SolarEvents GRENA3_INSTANCE =
+      new SolarEvents(Grena3::eventPosition, 2010, 2110);
 
-  /** Creates a reusable event calculator using SPA positions. */
-  public SolarEvents() {
-    this(SPA::eventPosition, -2000, 6000);
+  private final PositionProvider provider;
+  private final TimeRange range;
+
+  /** Returns the shared, immutable event calculator using SPA positions. */
+  public static SolarEvents spa() {
+    return SPA_INSTANCE;
   }
 
-  /** Creates a reusable event calculator using Grena3 positions, for years 2010 through 2110. */
+  /** Returns the shared, immutable event calculator using Grena3, for years 2010 through 2110. */
   public static SolarEvents grena3() {
-    return new SolarEvents(Grena3::eventPosition, 2010, 2110);
+    return GRENA3_INSTANCE;
   }
 
   /**
@@ -56,14 +60,18 @@ public final class SolarEvents {
    * @param provider position calculation; must satisfy {@link PositionProvider}'s contract
    * @param firstYear first supported year, inclusive, no earlier than -2000
    * @param lastYear last supported year, inclusive, no later than 6000
+   * @return a calculator using the supplied provider
    */
-  public SolarEvents(PositionProvider provider, int firstYear, int lastYear) {
+  public static SolarEvents of(PositionProvider provider, int firstYear, int lastYear) {
+    return new SolarEvents(provider, firstYear, lastYear);
+  }
+
+  private SolarEvents(PositionProvider provider, int firstYear, int lastYear) {
     this.provider = Objects.requireNonNull(provider);
     if (firstYear < -2000 || lastYear > 6000 || lastYear < firstYear) {
       throw new IllegalArgumentException("invalid provider year range");
     }
-    minTime = LocalDate.of(firstYear, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant();
-    maxTime = LocalDate.of(lastYear + 1, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant();
+    range = new TimeRange(firstYear, lastYear);
   }
 
   /**
@@ -323,7 +331,7 @@ public final class SolarEvents {
     // Include a boundary crossing to the search's resolution, then assign events by their
     // returned timestamps to [start, end). Keep the lookback within the provider's UT/TT range.
     Instant cursor = start.toInstant().minusMillis(1);
-    if (beforeRange(cursor, deltaT)) cursor = start.toInstant();
+    if (range.beforeStart(cursor, deltaT)) cursor = start.toInstant();
     List<ZonedDateTime> result = new ArrayList<>();
     while (true) {
       var event = next.apply(cursor);
@@ -493,15 +501,9 @@ public final class SolarEvents {
     if (!Double.isFinite(deltaT) || end.isBefore(start)) {
       throw new IllegalArgumentException("invalid search interval or deltaT");
     }
-    if (beforeRange(start, deltaT)
-        || end.isAfter(maxTime)
-        || toJulianDate(end) + deltaT / 86400.0 > toJulianDate(maxTime)) {
+    if (!range.contains(start, deltaT) || !range.contains(end, deltaT)) {
       throw new IllegalArgumentException("search interval outside provider's supported years");
     }
-  }
-
-  private boolean beforeRange(Instant time, double deltaT) {
-    return time.isBefore(minTime) || toJulianDate(time) + deltaT / 86400.0 < toJulianDate(minTime);
   }
 
   private static Instant at(Instant start, Instant end, double hours, double durationHours) {

@@ -32,13 +32,13 @@ Java 17 or newer. No additional runtime dependencies.
 
 ### Code
 
-`SolarPositions` and `SolarEvents` are immutable, reusable calculators. Both default to SPA and return simple records.
+`SolarPositions` and `SolarEvents` are immutable, reusable calculators. Both offer `spa()` and `grena3()` factories and return simple records.
 To get refraction-corrected topocentric coordinates:
 
 ```java
 var dateTime = ZonedDateTime.now();
 
-var positions = new SolarPositions();
+var positions = SolarPositions.spa();
 var position = positions.at(
     dateTime,
     48.21, // latitude (degrees)
@@ -56,11 +56,11 @@ proleptic Gregorian calendar, including before 1582; UTC approximates UT1.
 Omit the atmosphere for an unrefracted position, and omit height to assume sea level.
 Use `SolarPositions.grena3()` for Grena3, which requires zero height.
 
-`SolarEvents` defaults to SPA positions. Its `forDate` method returns every sunrise, transit and sunset in a local calendar date:
+`SolarEvents.spa()` searches SPA positions. Its `forDate` method returns every sunrise, transit and sunset in a local calendar date:
 
 ```java
 var date = LocalDate.of(2026, 9, 25);
-var calculator = new SolarEvents();
+var calculator = SolarEvents.spa();
 var events = calculator.forDate(
     date, ZoneId.of("Europe/Vienna"),
     48.21, 16.37, DeltaT.estimate(date));
@@ -75,7 +75,7 @@ System.out.println(events.alwaysBelow()); // continuous night
 To use Grena3 for events, create the calculator with `SolarEvents.grena3()`.
 Grena3 is faster but less accurate, and supports only 2010–2110.
 A custom solar model can implement the single-method `SolarEvents.PositionProvider` interface
-and be passed to `new SolarEvents(provider, firstYear, lastYear)`. It supplies unrefracted
+and be passed to `SolarEvents.of(provider, firstYear, lastYear)`. It supplies unrefracted
 elevation and local hour angle; the event search and result types stay the same.
 
 Each immutable list can be empty or contain several events. Returned times use the requested
@@ -135,7 +135,7 @@ While Grena3 is about an order of magnitude faster than SPA, in absolute terms w
 ### Solar event accuracy
 
 `SolarEvents` searches unrefracted topocentric solar-centre positions at sea level
-from the chosen model, defaulting to SPA.
+from the chosen model.
 Sunrise and sunset occur when the Sun's centre is 50 arcminutes (about 0.833°) below the
 geometric horizon, allowing for average atmospheric refraction and the Sun's apparent radius.
 Twilight and custom elevations use exactly the selected geometric angle, without an

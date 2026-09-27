@@ -75,16 +75,17 @@ class Grena3Test {
 
   @Test
   void testUnrefractedPosition() {
-    ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+    ZonedDateTime time = ZonedDateTime.of(2015, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
     SolarPosition result = POSITIONS.at(time, 39.742476, -105.1786, 67);
-    assertEquals(194.34024, result.azimuth(), TOLERANCE);
-    assertEquals(50.1279, result.zenithAngle(), TOLERANCE);
+    SolarPosition expected = SolarPositions.spa().at(time, 39.742476, -105.1786, 67);
+    assertEquals(expected.azimuth(), result.azimuth(), TOLERANCE);
+    assertEquals(expected.zenithAngle(), result.zenithAngle(), TOLERANCE);
   }
 
   @Test
   void testSillyLatLon() {
-    ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
+    ZonedDateTime time = ZonedDateTime.of(2015, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
     assertThrows(
         IllegalArgumentException.class, () -> POSITIONS.at(time, 139.742476, -105.1786, 67));

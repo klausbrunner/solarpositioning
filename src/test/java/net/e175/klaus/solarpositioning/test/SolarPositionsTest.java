@@ -1,12 +1,16 @@
 package net.e175.klaus.solarpositioning.test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import net.e175.klaus.solarpositioning.Atmosphere;
+import net.e175.klaus.solarpositioning.SolarEvents;
 import net.e175.klaus.solarpositioning.SolarPositions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +31,7 @@ class SolarPositionsTest {
   void preparedAndInstantPositionsMatchZonedTimes(ZonedDateTime time, double spaHeight) {
     var instant = time.toInstant();
     for (boolean useGrena3 : new boolean[] {false, true}) {
-      var positions = useGrena3 ? SolarPositions.grena3() : new SolarPositions();
+      var positions = useGrena3 ? SolarPositions.grena3() : SolarPositions.spa();
       double height = useGrena3 ? 0 : spaHeight;
       var snapshot = positions.forTime(time, DELTA_T);
       var instantSnapshot = positions.forTime(instant, DELTA_T);
@@ -55,9 +59,48 @@ class SolarPositionsTest {
     }
   }
 
+  @ParameterizedTest
+  @CsvSource({"false,-2000,6000", "true,2010,2110"})
+  void respectsSupportedUtAndTtRange(boolean useGrena3, int firstYear, int lastYear) {
+    var positions = useGrena3 ? SolarPositions.grena3() : SolarPositions.spa();
+    var start = LocalDate.of(firstYear, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant();
+    var end = LocalDate.of(lastYear + 1, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+    // Include the endpoints, as event searches do, and use UT rather than the local year.
+    for (var time : List.of(start, end)) {
+      var expected = positions.forTime(time, 0).at(LATITUDE, LONGITUDE);
+      assertEquals(expected, positions.at(time, LATITUDE, LONGITUDE, 0));
+      assertEquals(
+          expected, positions.at(time.atZone(ZoneOffset.ofHours(-1)), LATITUDE, LONGITUDE, 0));
+    }
+
+    // UT outside the range is invalid even if TT falls within it.
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> positions.at(start.minusNanos(1), LATITUDE, LONGITUDE, 1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> positions.at(end.plusNanos(1), LATITUDE, LONGITUDE, -1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> positions.forTime(start.minusSeconds(1).atZone(ZoneOffset.ofHours(1)), 0));
+
+    // TT must also stay within the range, including its endpoints.
+    assertThrows(IllegalArgumentException.class, () -> positions.forTime(start, -1));
+    assertThrows(IllegalArgumentException.class, () -> positions.forTime(end, 1));
+    assertDoesNotThrow(() -> positions.forTime(start.plusSeconds(1), -1));
+    assertDoesNotThrow(() -> positions.forTime(end.minusSeconds(1), 1));
+
+    var events = useGrena3 ? SolarEvents.grena3() : SolarEvents.spa();
+    var from = start.plusSeconds(1);
+    var to = end.minusSeconds(1);
+    assertDoesNotThrow(() -> events.nextTransit(from, from, LONGITUDE, -1));
+    assertDoesNotThrow(() -> events.nextTransit(to, to, LONGITUDE, 1));
+  }
+
   @Test
   void preparedTimesAreIndependent() {
-    for (var positions : List.of(new SolarPositions(), SolarPositions.grena3())) {
+    for (var positions : List.of(SolarPositions.spa(), SolarPositions.grena3())) {
       var first = positions.forTime(TIME, DELTA_T);
       var expected = first.at(LATITUDE, LONGITUDE);
       var later = positions.forTime(TIME.plusHours(6), DELTA_T + 1);
@@ -71,7 +114,7 @@ class SolarPositionsTest {
   @ParameterizedTest
   @CsvSource({"91,0", "-91,0", "0,181", "0,-181", "NaN,0", "0,NaN"})
   void preparedPositionsRejectInvalidCoordinates(double latitude, double longitude) {
-    for (var positions : List.of(new SolarPositions(), SolarPositions.grena3())) {
+    for (var positions : List.of(SolarPositions.spa(), SolarPositions.grena3())) {
       var snapshot = positions.forTime(TIME, DELTA_T);
       assertThrows(IllegalArgumentException.class, () -> snapshot.at(latitude, longitude));
       assertThrows(
@@ -104,7 +147,7 @@ class SolarPositionsTest {
   @ParameterizedTest
   @ValueSource(doubles = {Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY})
   void rejectsNonFiniteHeightAndDeltaT(double invalid) {
-    for (var positions : List.of(new SolarPositions(), SolarPositions.grena3())) {
+    for (var positions : List.of(SolarPositions.spa(), SolarPositions.grena3())) {
       assertThrows(
           IllegalArgumentException.class,
           () -> positions.at(TIME, LATITUDE, LONGITUDE, invalid, DELTA_T));
@@ -132,7 +175,7 @@ class SolarPositionsTest {
 
   @Test
   void rejectsMissingTimeAndAtmosphere() {
-    for (var positions : List.of(new SolarPositions(), SolarPositions.grena3())) {
+    for (var positions : List.of(SolarPositions.spa(), SolarPositions.grena3())) {
       assertThrows(
           NullPointerException.class,
           () -> positions.at((ZonedDateTime) null, LATITUDE, LONGITUDE, DELTA_T));

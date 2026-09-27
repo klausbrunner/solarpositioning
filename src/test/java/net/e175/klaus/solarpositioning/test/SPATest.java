@@ -16,7 +16,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class SPATest {
 
-  private static final SolarPositions POSITIONS = new SolarPositions();
+  private static final SolarPositions POSITIONS = SolarPositions.spa();
   private static final double TOLERANCE = 0.0001;
 
   @Test

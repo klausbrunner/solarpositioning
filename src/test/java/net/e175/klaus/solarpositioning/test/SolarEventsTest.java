@@ -17,9 +17,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class SolarEventsTest {
-  private static final SolarPositions SPA_POSITIONS = new SolarPositions();
+  private static final SolarPositions SPA_POSITIONS = SolarPositions.spa();
   private static final SolarPositions GRENA_POSITIONS = SolarPositions.grena3();
-  private static final SolarEvents EVENTS = new SolarEvents();
+  private static final SolarEvents EVENTS = SolarEvents.spa();
   private static final double DELTA_T = 69.184;
 
   @ParameterizedTest
@@ -330,7 +330,7 @@ class SolarEventsTest {
     // sin(elevation) = -0.5 * sin(phase/2)^2: a daily curve touching zero at noon.
     // Its crossings have a closed-form solution, independent of either position model.
     var events =
-        new SolarEvents(
+        SolarEvents.of(
             (time, lat, lon) -> {
               double phase = 2 * Math.PI * (time.julianDate() - 2460390.0);
               double sine = Math.sin(phase / 2);
@@ -359,7 +359,7 @@ class SolarEventsTest {
     var date = LocalDate.of(2024, 3, 20);
     Instant midnight = date.atStartOfDay(ZoneOffset.UTC).toInstant();
     var events =
-        new SolarEvents(
+        SolarEvents.of(
             (time, lat, lon) -> {
               double phase = 2 * Math.PI * (time.julianDate() - 2460389.5);
               return new SolarEvents.Position(
@@ -458,7 +458,7 @@ class SolarEventsTest {
     // its phase, so this also checks that both reach the provider unchanged.
     var date = LocalDate.of(2024, 3, 20);
     var events =
-        new SolarEvents(
+        SolarEvents.of(
             (time, latitude, longitude) -> {
               double hourAngle = (time.julianEphemerisDay() - 2460390.0) * 360 + longitude;
               double elevation =
@@ -558,10 +558,10 @@ class SolarEventsTest {
     assertThrows(
         IllegalArgumentException.class,
         () ->
-            new SolarEvents((time, lat, lon) -> new SolarEvents.Position(Double.NaN, 0), 2024, 2024)
+            SolarEvents.of((time, lat, lon) -> new SolarEvents.Position(Double.NaN, 0), 2024, 2024)
                 .forDate(date, ZoneOffset.UTC, 0, 0, 0));
     assertThrows(
         IllegalArgumentException.class,
-        () -> new SolarEvents((time, lat, lon) -> new SolarEvents.Position(0, 0), 2024, 2023));
+        () -> SolarEvents.of((time, lat, lon) -> new SolarEvents.Position(0, 0), 2024, 2023));
   }
 }
