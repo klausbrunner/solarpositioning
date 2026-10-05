@@ -39,8 +39,9 @@ final class MathUtil {
   }
 
   static double limitTo(double degrees, double max) {
-    double dividedDegrees = degrees / max;
-    double limited = max * (dividedDegrees - Math.floor(dividedDegrees));
-    return (limited < 0) ? limited + max : limited;
+    double remainder = degrees % max;
+    double limited = remainder < 0.0 ? remainder + max : remainder;
+    // Adding max to a tiny negative remainder can round up to the excluded boundary.
+    return limited >= max ? 0.0 : limited;
   }
 }

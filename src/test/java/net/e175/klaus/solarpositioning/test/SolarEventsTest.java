@@ -355,6 +355,46 @@ class SolarEventsTest {
 
   @ParameterizedTest
   @ValueSource(ints = {-1, 1})
+  void preservesShallowCrossingsAtSubdivisionPoints(int direction) {
+    Instant noon = Instant.parse("2024-03-20T12:00:00Z");
+    var events =
+        SolarEvents.of(
+            (time, lat, lon) -> {
+              double phase = 2 * Math.PI * (time.julianDate() - 2460390.0);
+              return new SolarEvents.Position(
+                  Math.toDegrees(Math.asin(direction * 1e-4 * Math.sin(phase))),
+                  Math.toDegrees(phase));
+            },
+            2024,
+            2024);
+    BiFunction<Instant, Instant, Optional<Instant>> search =
+        direction > 0
+            ? (a, b) -> events.nextRise(a, b, 0, 0, 0, 0.0)
+            : (a, b) -> events.nextSet(a, b, 0, 0, 0, 0.0);
+    for (int seconds : new int[] {1, 10, 60}) {
+      Instant start = noon.minusSeconds(seconds), end = noon.plusSeconds(seconds);
+      Instant crossing = search.apply(start, end).orElseThrow();
+      assertSameEvents(List.of(noon), List.of(crossing));
+      assertThat(search.apply(crossing, end)).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 10, 60, 3600})
+  void grenaPreservesShallowPolarCrossingInShortWindows(int seconds) {
+    Instant noon = Instant.parse("2024-06-21T12:00:00Z");
+    Instant start = noon.minusSeconds(seconds), end = noon.plusSeconds(seconds);
+    double horizon = GRENA_POSITIONS.at(noon, -90, 0, 0).elevation();
+    assertThat(GRENA_POSITIONS.at(start, -90, 0, 0).elevation()).isLessThan(horizon);
+    assertThat(GRENA_POSITIONS.at(end, -90, 0, 0).elevation()).isGreaterThan(horizon);
+    var events = SolarEvents.grena3();
+    Instant rise = events.nextRise(start, end, -90, 0, 0, horizon).orElseThrow();
+    assertSameEvents(List.of(noon), List.of(rise));
+    assertThat(events.nextRise(rise, end, -90, 0, 0, horizon)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, 1})
   void assignsMidnightCrossingToFollowingDate(int direction) {
     var date = LocalDate.of(2024, 3, 20);
     Instant midnight = date.atStartOfDay(ZoneOffset.UTC).toInstant();

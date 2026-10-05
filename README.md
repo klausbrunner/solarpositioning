@@ -80,7 +80,8 @@ elevation and local hour angle; the event search and result types stay the same.
 
 Each immutable list can be empty or contain several events. Returned times use the requested
 zone and lie within the date, including its start and excluding the following date. This also
-handles clock changes and skipped dates. `stateAtStart()` describes the Sun relative to the
+handles clock changes and skipped dates. Historical clock rollbacks that split a local date into
+separate intervals are not supported. `stateAtStart()` describes the Sun relative to the
 selected horizon. A state within numerical tolerance of the horizon is `ON_HORIZON`.
 
 Pass a horizon for twilight or a numeric elevation for a custom crossing.

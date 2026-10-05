@@ -17,7 +17,8 @@ import java.util.function.Function;
  * {@code start} and including {@code end}. An empty result means the requested crossing does not
  * occur in that interval. Passing a returned instant as the next start searches for the following
  * event. {@code forDate} collects all events in a local calendar date, including its start and
- * excluding the following date. Rise and set are independent of transit.
+ * excluding the following date. Historical clock rollbacks that split a local date into separate
+ * intervals are not supported. Rise and set are independent of transit.
  *
  * <p>Horizon crossings use the unrefracted, topocentric solar centre at sea level. The standard
  * sunrise horizon includes the conventional allowance for refraction and solar radius; twilight and
@@ -541,6 +542,12 @@ public final class SolarEvents {
       }
       double middle = start + width / 2.0;
       double m = value(middle);
+      // Keep a shallow crossing inside a bracket instead of splitting at zero.
+      // Stay strictly inside the interval so both recursive searches progress.
+      if (m == 0.0 && (a != 0.0 || b != 0.0)) {
+        middle += min(TIME_TOLERANCE, width / 4.0);
+        m = value(middle);
+      }
       double left = find(start, middle, a, m);
       return Double.isNaN(left) ? find(middle, end, m, b) : left;
     }
