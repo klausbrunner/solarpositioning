@@ -15,6 +15,8 @@ import static java.lang.Math.*;
  */
 final class Grena3 {
 
+  static final double REFRACTION_CUTOFF = 0.0;
+
   private Grena3() {}
 
   record TimeDependent(double siderealTime, double alpha, double sinDelta, double cosDelta) {}
@@ -28,17 +30,30 @@ final class Grena3 {
 
     // refraction correction (disabled for silly parameter values)
     final boolean doCorrect =
-        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > 0.0;
+        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > REFRACTION_CUTOFF;
 
-    final double deltaRe =
-        doCorrect
-            ? (0.08422 * (pressure / 1000))
-                / ((273.0 + temperature) * tan(eP + 0.003138 / (eP + 0.08919)))
-            : 0.0;
+    final double deltaRe = doCorrect ? refractionCorrection(eP, pressure, temperature) : 0.0;
 
     final double z = PI / 2 - eP - deltaRe;
 
     return new SolarPosition(MathUtil.limitTo(toDegrees(gamma + PI), 360.0), toDegrees(z));
+  }
+
+  private static double refractionPhase(double elevation) {
+    return elevation + 0.003138 / (elevation + 0.08919);
+  }
+
+  // Radians on the active branch; callers apply REFRACTION_CUTOFF.
+  static double refractionCorrection(double elevation, double pressure, double temperature) {
+    return (0.08422 * (pressure / 1000))
+        / ((273.0 + temperature) * tan(refractionPhase(elevation)));
+  }
+
+  static double refractionSlopeBound(Atmosphere atmosphere) {
+    // The phase derivative is at most one, and sin(phase) is smallest at the cutoff.
+    double phase = refractionPhase(REFRACTION_CUTOFF);
+    return refractionCorrection(REFRACTION_CUTOFF, atmosphere.pressure(), atmosphere.temperature())
+        / (sin(phase) * cos(phase));
   }
 
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {

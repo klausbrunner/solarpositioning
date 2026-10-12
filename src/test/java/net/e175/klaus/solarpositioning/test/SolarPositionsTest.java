@@ -3,6 +3,7 @@ package net.e175.klaus.solarpositioning.test;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -21,6 +22,31 @@ class SolarPositionsTest {
   private static final ZonedDateTime TIME = ZonedDateTime.parse("2024-06-21T08:30:12.345678+02:00");
   private static final double LATITUDE = 48.21, LONGITUDE = 16.37, DELTA_T = 69.184;
   private static final Atmosphere ATMOSPHERE = new Atmosphere(1010, 15);
+
+  @Test
+  void preparedSpaCoordinatesMatchPublishedExample() {
+    var prepared = SolarPositions.spa().forTime(Instant.parse("2003-10-17T19:30:30Z"), 67);
+    // NREL Table A5.1 gives the radius vector (AU) and geocentric angles (degrees).
+    assertEquals(0.9965422974, prepared.earthRadiusVector().orElseThrow(), 1e-10);
+    assertEquals(202.22741, prepared.rightAscension(), 1e-5);
+    assertEquals(-9.31434, prepared.declination(), 1e-5);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {1, 3, 6, 9, 12})
+  void preparedGrenaCoordinatesAgreeWithSpa(int month) {
+    var time = LocalDate.of(2024, month, 21).atTime(12, 30).toInstant(ZoneOffset.UTC);
+    var spa = SolarPositions.spa().forTime(time, DELTA_T);
+    var grena = SolarPositions.grena3().forTime(time, DELTA_T);
+    assertTrue(grena.earthRadiusVector().isEmpty());
+    for (var prepared : List.of(spa, grena)) {
+      assertTrue(prepared.rightAscension() >= 0 && prepared.rightAscension() < 360);
+      assertTrue(prepared.declination() >= -90 && prepared.declination() <= 90);
+    }
+    double raError = Math.abs(spa.rightAscension() - grena.rightAscension());
+    assertTrue(Math.min(raError, 360 - raError) < 0.02);
+    assertEquals(spa.declination(), grena.declination(), 0.02);
+  }
 
   @ParameterizedTest
   @CsvSource({

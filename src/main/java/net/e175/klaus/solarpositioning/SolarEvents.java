@@ -75,6 +75,11 @@ public final class SolarEvents {
     range = new TimeRange(firstYear, lastYear);
   }
 
+  SolarEvents(PositionProvider provider, TimeRange range) {
+    this.provider = Objects.requireNonNull(provider);
+    this.range = Objects.requireNonNull(range);
+  }
+
   /**
    * Supplies unrefracted, sea-level solar positions. Julian dates are continuous UT, with TT
    * available via {@link JulianDate#julianEphemerisDay()}. Longitude is positive east.
@@ -93,7 +98,7 @@ public final class SolarEvents {
   /**
    * Coordinates needed by the search, in degrees.
    *
-   * @param elevation unrefracted topocentric elevation of the solar centre at sea level
+   * @param elevation unrefracted topocentric elevation of the solar centre
    * @param hourAngle geocentric local hour angle, positive west; any full-turn wrapping is accepted
    */
   public record Position(double elevation, double hourAngle) {
@@ -498,7 +503,7 @@ public final class SolarEvents {
     return Optional.of(at(start, end, crossing, hours));
   }
 
-  private void checkInterval(Instant start, Instant end, double deltaT) {
+  void checkInterval(Instant start, Instant end, double deltaT) {
     if (!Double.isFinite(deltaT) || end.isBefore(start)) {
       throw new IllegalArgumentException("invalid search interval or deltaT");
     }

@@ -1,8 +1,13 @@
 package net.e175.klaus.solarpositioning;
 
+import static java.lang.Math.*;
+
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.function.DoubleUnaryOperator;
 
 /**
  * Calculates topocentric solar positions. Use {@link #spa()} for SPA or {@link #grena3()} for
@@ -205,6 +210,144 @@ public final class SolarPositions {
   }
 
   /**
+   * Finds the first rising solar-centre elevation crossing using the same observation settings as
+   * {@code at}.
+   *
+   * <p>The angle is geometric without an atmosphere, apparent with one. Refraction cutoff jumps
+   * count as crossings; a tangency alone does not. Height affects parallax, not the visible
+   * horizon. Searches use the same one-millisecond numerical resolution as {@link SolarEvents}.
+   * Passing a returned instant as the next start searches for the following event.
+   *
+   * @param start exclusive start instant
+   * @param end inclusive end instant
+   * @param latitude observer latitude in degrees, positive north
+   * @param longitude observer longitude in degrees, positive east
+   * @param deltaT TT minus UT1 in seconds, held constant throughout the search
+   * @param target elevation, observer height and optional atmosphere
+   * @return the crossing time, or empty when absent
+   * @throws IllegalArgumentException for invalid coordinates, interval or delta T, nonzero height
+   *     with Grena3, times outside the model's UT/TT range, or refraction too strong to guarantee a
+   *     monotonic elevation mapping
+   * @throws NullPointerException if start, end or target is null
+   */
+  public Optional<Instant> nextElevationRise(
+      Instant start,
+      Instant end,
+      double latitude,
+      double longitude,
+      double deltaT,
+      ElevationTarget target) {
+    return elevationCrossing(start, end, latitude, longitude, deltaT, target, true);
+  }
+
+  /**
+   * Finds the first setting solar-centre elevation crossing using the same observation settings as
+   * {@code at}.
+   *
+   * <p>Uses the same crossing rules and numerical resolution as {@link #nextElevationRise}.
+   *
+   * @param start exclusive start instant
+   * @param end inclusive end instant
+   * @param latitude observer latitude in degrees, positive north
+   * @param longitude observer longitude in degrees, positive east
+   * @param deltaT TT minus UT1 in seconds, held constant throughout the search
+   * @param target elevation, observer height and optional atmosphere
+   * @return the crossing time, or empty when absent
+   * @throws IllegalArgumentException for invalid coordinates, interval or delta T, nonzero height
+   *     with Grena3, times outside the model's UT/TT range, or refraction too strong to guarantee a
+   *     monotonic elevation mapping
+   * @throws NullPointerException if start, end or target is null
+   */
+  public Optional<Instant> nextElevationSet(
+      Instant start,
+      Instant end,
+      double latitude,
+      double longitude,
+      double deltaT,
+      ElevationTarget target) {
+    return elevationCrossing(start, end, latitude, longitude, deltaT, target, false);
+  }
+
+  private Optional<Instant> elevationCrossing(
+      Instant start,
+      Instant end,
+      double latitude,
+      double longitude,
+      double deltaT,
+      ElevationTarget target,
+      boolean rising) {
+    Objects.requireNonNull(target, "target");
+    MathUtil.checkLatLonRange(latitude, longitude);
+    if (algorithm == Algorithm.GRENA3 && target.height() != 0.0) {
+      throw new IllegalArgumentException("Grena3 requires zero observer height");
+    }
+    SolarEvents.PositionProvider provider =
+        switch (algorithm) {
+          case SPA ->
+              (time, lat, lon) -> SPA.eventPositionAtHeight(time, lat, lon, target.height());
+          case GRENA3 -> Grena3::eventPosition;
+        };
+    var events = new SolarEvents(provider, algorithm.range);
+    events.checkInterval(start, end, deltaT);
+    var angle = geometricThreshold(target);
+    if (angle.isEmpty()) {
+      return Optional.empty();
+    }
+    return rising
+        ? events.nextRise(start, end, latitude, longitude, deltaT, angle.orElseThrow())
+        : events.nextSet(start, end, latitude, longitude, deltaT, angle.orElseThrow());
+  }
+
+  private OptionalDouble geometricThreshold(ElevationTarget target) {
+    if (target.atmosphere().isEmpty()) {
+      return OptionalDouble.of(target.angle());
+    }
+    var atmosphere = target.atmosphere().orElseThrow();
+    double cutoff = algorithm == Algorithm.SPA ? SPA.REFRACTION_CUTOFF : Grena3.REFRACTION_CUTOFF;
+    double slopeBound =
+        algorithm == Algorithm.SPA
+            ? SPA.refractionSlopeBound(atmosphere)
+            : Grena3.refractionSlopeBound(atmosphere);
+    if (slopeBound >= 1.0) {
+      throw new IllegalArgumentException(
+          "refraction too strong to guarantee monotonic elevation crossings");
+    }
+    if (target.angle() <= cutoff) {
+      return OptionalDouble.of(target.angle());
+    }
+    DoubleUnaryOperator apparent =
+        angle ->
+            angle
+                + switch (algorithm) {
+                  case SPA ->
+                      SPA.refractionCorrection(
+                          angle, atmosphere.pressure(), atmosphere.temperature());
+                  case GRENA3 ->
+                      toDegrees(
+                          Grena3.refractionCorrection(
+                              toRadians(angle), atmosphere.pressure(), atmosphere.temperature()));
+                };
+    if (target.angle() <= apparent.applyAsDouble(cutoff)) {
+      return OptionalDouble.of(cutoff);
+    }
+    if (target.angle() > apparent.applyAsDouble(90.0)) {
+      return OptionalDouble.empty();
+    }
+    double low = cutoff, high = 90.0;
+    // Invert only the continuous active branch, once per search. The event search then works
+    // with geometric elevation, preserving its continuity and curvature assumptions.
+    for (int i = 0; i < 48; i++) {
+      double middle = low + (high - low) / 2.0;
+      if (apparent.applyAsDouble(middle) < target.angle()) {
+        low = middle;
+      } else {
+        high = middle;
+      }
+    }
+    return OptionalDouble.of(high);
+  }
+
+  /**
    * Prepares positions at one time, reusing the selected model's time-dependent calculations.
    *
    * @param time observer's date and time
@@ -244,7 +387,10 @@ public final class SolarPositions {
         yield new AtTime(
             (latitude, longitude, height, pressure, temperature) ->
                 SPA.calculateSolarPositionWithTimeDependentParts(
-                    latitude, longitude, height, pressure, temperature, parts));
+                    latitude, longitude, height, pressure, temperature, parts),
+            OptionalDouble.of(parts.r()),
+            parts.alphaDegrees(),
+            parts.deltaDegrees());
       }
       case GRENA3 -> {
         var parts = Grena3.calculateTimeDependentParts(julianDate);
@@ -255,7 +401,10 @@ public final class SolarPositions {
               }
               return Grena3.calculateSolarPositionWithTimeDependentParts(
                   latitude, longitude, pressure, temperature, parts);
-            });
+            },
+            OptionalDouble.empty(),
+            toDegrees(parts.alpha()),
+            toDegrees(asin(parts.sinDelta())));
       }
     };
   }
@@ -275,9 +424,34 @@ public final class SolarPositions {
    */
   public static final class AtTime {
     private final Calculation calculation;
+    private final OptionalDouble earthRadiusVector;
+    private final double rightAscension;
+    private final double declination;
 
-    private AtTime(Calculation calculation) {
+    private AtTime(
+        Calculation calculation,
+        OptionalDouble earthRadiusVector,
+        double rightAscension,
+        double declination) {
       this.calculation = calculation;
+      this.earthRadiusVector = earthRadiusVector;
+      this.rightAscension = rightAscension;
+      this.declination = declination;
+    }
+
+    /** Returns the Earth–Sun distance in astronomical units for SPA, or empty for Grena3. */
+    public OptionalDouble earthRadiusVector() {
+      return earthRadiusVector;
+    }
+
+    /** Returns the geocentric right ascension in degrees, in [0, 360). */
+    public double rightAscension() {
+      return rightAscension;
+    }
+
+    /** Returns the geocentric declination in degrees, in [-90, 90]. */
+    public double declination() {
+      return declination;
     }
 
     /**

@@ -16,7 +16,7 @@ import static net.e175.klaus.solarpositioning.MathUtil.*;
  */
 final class SPA {
 
-  private static final double SUNRISE_SUNSET = -0.83337;
+  static final double REFRACTION_CUTOFF = -0.83337;
 
   private SPA() {}
 
@@ -27,8 +27,15 @@ final class SPA {
   record SpaTimeDependent(double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
 
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
+    return eventPositionAtHeight(time, latitude, longitude, 0.0);
+  }
+
+  static SolarEvents.Position eventPositionAtHeight(
+      JulianDate time, double latitude, double longitude, double height) {
     double phi = toRadians(latitude), u = atan(0.99664719 * tan(phi));
-    double sinPhi = sin(phi), cosPhi = cos(phi), x = cos(u), z = 0.99664719 * sin(u);
+    double sinPhi = sin(phi), cosPhi = cos(phi);
+    double x = cos(u) + (height * cosPhi) / 6378140;
+    double z = 0.99664719 * sin(u) + (height * sinPhi) / 6378140;
     var parts = calculateSpaTimeDependentParts(time);
     double delta = toRadians(parts.deltaDegrees());
     double hourAngle = parts.nuDegrees() + longitude - parts.alphaDegrees();
@@ -179,16 +186,33 @@ final class SPA {
     // refraction correction.
     // 1) extremely silly values for p and t are silently ignored, disabling correction
     // 2) only apply refraction correction when the sun is visible
-    boolean doCorrect = checkRefractionParamsUsable(p, t) && eZeroDegrees > SUNRISE_SUNSET;
+    boolean doCorrect = checkRefractionParamsUsable(p, t) && eZeroDegrees > REFRACTION_CUTOFF;
 
     if (doCorrect) {
-      return (90
-          - eZeroDegrees
-          - ((p / 1010.0) * (283.0 / (273.0 + t)) * 1.02)
-              / (60.0 * tan(toRadians(eZeroDegrees + 10.3 / (eZeroDegrees + 5.11)))));
+      return 90 - eZeroDegrees - refractionCorrection(eZeroDegrees, p, t);
     } else {
       return 90 - eZeroDegrees;
     }
+  }
+
+  private static double refractionPhase(double elevation) {
+    return toRadians(elevation + 10.3 / (elevation + 5.11));
+  }
+
+  // Degrees on the active branch; callers apply REFRACTION_CUTOFF.
+  static double refractionCorrection(double elevation, double pressure, double temperature) {
+    return (pressure / 1010.0)
+        * (283.0 / (273.0 + temperature))
+        * 1.02
+        / (60.0 * tan(refractionPhase(elevation)));
+  }
+
+  static double refractionSlopeBound(Atmosphere atmosphere) {
+    // The phase derivative is at most one, and sin(phase) is smallest at the cutoff.
+    double phase = refractionPhase(REFRACTION_CUTOFF);
+    return refractionCorrection(REFRACTION_CUTOFF, atmosphere.pressure(), atmosphere.temperature())
+        * toRadians(1.0)
+        / (sin(phase) * cos(phase));
   }
 
   private static AlphaDelta calculateGeocentricSunCoordinates(
