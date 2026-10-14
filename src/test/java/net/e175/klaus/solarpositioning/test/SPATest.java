@@ -31,6 +31,14 @@ class SPATest {
   }
 
   @Test
+  void matchesFarFutureReference() {
+    var time = ZonedDateTime.parse("6000-06-21T12:00:00Z");
+    var position = POSITIONS.at(time, 45, 0, 0);
+
+    assertEquals(22.139936713, position.zenithAngle(), 1e-6);
+  }
+
+  @Test
   void preservesSubSecondPrecision() {
     ZonedDateTime time = ZonedDateTime.of(2003, 10, 17, 12, 30, 30, 0, ZoneOffset.ofHours(-7));
 
