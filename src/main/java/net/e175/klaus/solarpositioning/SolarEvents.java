@@ -496,7 +496,17 @@ public final class SolarEvents {
     var search =
         new CrossingSearch(
             t -> position.applyAsDouble(toJulianDate(at(start, end, t, hours))), curvature);
-    double crossing = search.find(0.0, hours, search.value(0.0), search.value(hours));
+    double b = search.value(hours);
+    double crossing = search.find(0.0, hours, search.value(0.0), b);
+    if (Double.isNaN(crossing) && b == 0.0) {
+      // Include a zero endpoint only when it crosses, rather than touches, the horizon.
+      Instant after = end.plusMillis(1);
+      if (range.contains(after, deltaT)
+          && search.value(max(0.0, hours - TIME_TOLERANCE)) < 0.0
+          && position.applyAsDouble(toJulianDate(after)) > 0.0) {
+        return Optional.of(end);
+      }
+    }
     if (Double.isNaN(crossing)) {
       return Optional.empty();
     }

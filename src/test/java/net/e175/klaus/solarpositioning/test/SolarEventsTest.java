@@ -7,6 +7,7 @@ import java.time.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import net.e175.klaus.solarpositioning.DeltaT;
+import net.e175.klaus.solarpositioning.JulianDate;
 import net.e175.klaus.solarpositioning.SolarEvents;
 import net.e175.klaus.solarpositioning.SolarEvents.Horizon;
 import net.e175.klaus.solarpositioning.SolarPositions;
@@ -345,6 +346,10 @@ class SolarEventsTest {
       // Touching the horizon, or staying below it, creates no crossing.
       assertThat(rises).isEmpty();
       assertThat(sets).isEmpty();
+      assertThat(events.nextRise(start, noon, 0, 0, 0, horizon)).isEmpty();
+      assertThat(events.nextSet(start, noon, 0, 0, 0, horizon)).isEmpty();
+      assertThat(events.nextRise(noon, end, 0, 0, 0, horizon)).isEmpty();
+      assertThat(events.nextSet(noon, end, 0, 0, 0, horizon)).isEmpty();
     } else {
       double seconds =
           86400 / Math.PI * Math.asin(Math.sqrt(-2 * Math.sin(Math.toRadians(horizon))));
@@ -355,7 +360,7 @@ class SolarEventsTest {
 
   @ParameterizedTest
   @ValueSource(ints = {-1, 1})
-  void preservesShallowCrossingsAtSubdivisionPoints(int direction) {
+  void preservesShallowCrossingsAtSubdivisionPointsAndEndpoints(int direction) {
     Instant noon = Instant.parse("2024-03-20T12:00:00Z");
     var events =
         SolarEvents.of(
@@ -376,6 +381,8 @@ class SolarEventsTest {
       Instant crossing = search.apply(start, end).orElseThrow();
       assertSameEvents(List.of(noon), List.of(crossing));
       assertThat(search.apply(crossing, end)).isEmpty();
+      assertThat(search.apply(start, noon)).contains(noon);
+      assertThat(search.apply(noon, end)).isEmpty();
     }
   }
 
@@ -566,6 +573,25 @@ class SolarEventsTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> events.forDate(LocalDate.of(2110, 12, 31), ZoneOffset.UTC, 0, 0, 1));
+  }
+
+  @ParameterizedTest
+  @ValueSource(doubles = {0, 60})
+  void endpointProbeRespectsUtAndTtUpperBounds(double deltaT) {
+    var upperBound = Instant.parse("2111-01-01T00:00:00Z");
+    double upperJulianDate = new JulianDate(upperBound, 0).julianDate();
+    var events =
+        SolarEvents.of(
+            (time, lat, lon) -> {
+              assertThat(time.julianDate()).isLessThanOrEqualTo(upperJulianDate);
+              assertThat(time.julianEphemerisDay()).isLessThanOrEqualTo(upperJulianDate);
+              double hours = (time.julianEphemerisDay() - upperJulianDate) * 24;
+              return new SolarEvents.Position(hours * 1e-4, hours * 15);
+            },
+            2010,
+            2110);
+    var end = upperBound.minusSeconds((long) deltaT);
+    assertThat(events.nextRise(end.minusSeconds(10), end, 0, 0, deltaT, 0.0)).isEmpty();
   }
 
   @Test
