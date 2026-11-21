@@ -59,8 +59,9 @@ final class Grena3 {
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
     var parts = calculateTimeDependentParts(time);
     var position = position(parts, latitude, longitude);
-    return new SolarEvents.Position(
-        toDegrees(position.elevationRadians()), toDegrees(position.hourAngleRadians()));
+    // Match the zenith-to-elevation conversion of the public position.
+    double zenith = toDegrees(PI / 2 - position.elevationRadians());
+    return new SolarEvents.Position(90.0 - zenith, toDegrees(position.hourAngleRadians()));
   }
 
   // Unrefracted angles in radians; azimuth is measured westwards from south.

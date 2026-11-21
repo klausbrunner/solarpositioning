@@ -16,16 +16,16 @@ import java.util.function.Function;
  * <p>The {@code nextRise}, {@code nextSet} and {@code nextTransit} searches run forwards, excluding
  * {@code start} and including {@code end}. An empty result means the requested crossing does not
  * occur in that interval. Passing a returned instant as the next start searches for the following
- * event. {@code forDate} collects all events in a local calendar date, including its start and
+ * event. An exact zero at the end counts if samples within the interval establish a crossing
+ * direction. {@code forDate} collects all events in a local calendar date, including its start and
  * excluding the following date. Historical clock rollbacks that split a local date into separate
  * intervals are not supported. Rise and set are independent of transit.
  *
  * <p>Horizon crossings use the unrefracted, topocentric solar centre at sea level. The standard
  * sunrise horizon includes the conventional allowance for refraction and solar radius; twilight and
  * custom horizons use their specified geometric elevation. Terrain and weather are not modelled.
- * Numerical crossing brackets are refined to one millisecond; this is not a claim of equivalent
- * accuracy for observed events, especially near a grazing horizon. Assignment to dates likewise has
- * one-millisecond resolution.
+ * Search and date assignment use 100 ms resolution. Crossings closer together need not be
+ * distinguished. Each search throws {@link ArithmeticException} if it reaches its evaluation limit.
  *
  * <p>Instants use Java's continuous, proleptic Gregorian time line, including before 1582. As in
  * the position API, UTC approximates UT1, and {@code deltaT} is TT minus UT1 in seconds. It is held
@@ -34,9 +34,12 @@ import java.util.function.Function;
  */
 public final class SolarEvents {
   private static final double HOURS_PER_SECOND = 1.0 / 3600.0;
-  private static final double TIME_TOLERANCE = HOURS_PER_SECOND / 1000.0;
-  // Conservative allowance for Julian-date quantisation and floating-point evaluation.
-  private static final double ROUNDING_ERROR = 1e-8;
+  private static final long TIME_TOLERANCE_MILLIS = 100;
+  private static final double TIME_TOLERANCE = TIME_TOLERANCE_MILLIS * HOURS_PER_SECOND / 1000.0;
+  private static final double POSITION_ROUNDOFF = 1e-12;
+  private static final double HOUR_ANGLE_ROUNDOFF = 1e-9;
+  private static final double HORIZON_STATE_TOLERANCE = 1e-8;
+  private static final int MAX_SEARCH_EVALUATIONS = 65_536;
 
   private static final SolarEvents SPA_INSTANCE = new SolarEvents(SPA::eventPosition, -2000, 6000);
   private static final SolarEvents GRENA3_INSTANCE =
@@ -306,7 +309,7 @@ public final class SolarEvents {
           h -> {
             double initial = initialAltitude - sin(toRadians(h));
             HorizonState state =
-                abs(initial) <= ROUNDING_ERROR
+                abs(initial) <= HORIZON_STATE_TOLERANCE
                     ? HorizonState.ON_HORIZON
                     : initial > 0 ? HorizonState.ABOVE : HorizonState.BELOW;
             return new Day(
@@ -334,16 +337,23 @@ public final class SolarEvents {
       ZonedDateTime end,
       double deltaT,
       Function<Instant, Optional<Instant>> next) {
-    // Include a boundary crossing to the search's resolution, then assign events by their
-    // returned timestamps to [start, end). Keep the lookback within the provider's UT/TT range.
-    Instant cursor = start.toInstant().minusMillis(1);
-    if (range.beforeStart(cursor, deltaT)) cursor = start.toInstant();
+    // Include a boundary crossing to the search's resolution, within the provider's UT/TT range.
+    Instant startTime = start.toInstant();
+    Instant cursor = startTime.minusMillis(TIME_TOLERANCE_MILLIS);
+    if (range.beforeStart(cursor, deltaT)) cursor = startTime;
+    double startDay = toJulianDate(startTime), endDay = toJulianDate(end.toInstant());
     List<ZonedDateTime> result = new ArrayList<>();
     while (true) {
       var event = next.apply(cursor);
-      if (event.isEmpty() || !event.orElseThrow().isBefore(end.toInstant())) break;
+      if (event.isEmpty()) break;
       cursor = event.orElseThrow();
-      if (!cursor.isBefore(start.toInstant())) result.add(cursor.atZone(start.getZone()));
+      // A timestamp that rounds to the boundary belongs to the following date.
+      double day = toJulianDate(cursor);
+      if (day >= endDay) break;
+      if (day >= startDay) {
+        if (cursor.isBefore(startTime)) cursor = startTime;
+        result.add(cursor.atZone(start.getZone()));
+      }
     }
     return List.copyOf(result);
   }
@@ -450,6 +460,7 @@ public final class SolarEvents {
         end,
         deltaT,
         0.1,
+        HOUR_ANGLE_ROUNDOFF,
         jd -> sin(toRadians(position(jd, 0.0, longitude, deltaT).hourAngle())));
   }
 
@@ -467,12 +478,16 @@ public final class SolarEvents {
     // Engineering estimate for |f''| in hours: daily rotation contributes about
     // (2*pi/24)^2 * cos(latitude) = 0.069 * cos(latitude). Round up to 0.1 and
     // retain a floor for slower solar motion and parallax, including at the poles.
-    double curvature = 0.1 * abs(cos(toRadians(latitude))) + 0.0001;
+    double cosLatitude = abs(cos(toRadians(latitude)));
+    double curvature = 0.1 * cosLatitude + 0.0001;
+    // The hour-angle term in sine of elevation is multiplied by cos(latitude).
+    double roundoff = POSITION_ROUNDOFF + HOUR_ANGLE_ROUNDOFF * cosLatitude;
     return search(
         start,
         end,
         deltaT,
         curvature,
+        roundoff,
         jd ->
             direction
                 * (sin(toRadians(position(jd, latitude, longitude, deltaT).elevation()))
@@ -484,7 +499,12 @@ public final class SolarEvents {
   }
 
   private Optional<Instant> search(
-      Instant start, Instant end, double deltaT, double curvature, DoubleUnaryOperator position) {
+      Instant start,
+      Instant end,
+      double deltaT,
+      double curvature,
+      double roundoff,
+      DoubleUnaryOperator position) {
     checkInterval(start, end, deltaT);
     Duration duration = Duration.between(start, end);
     double hours = (duration.getSeconds() + duration.getNano() / 1e9) * HOURS_PER_SECOND;
@@ -493,17 +513,16 @@ public final class SolarEvents {
     }
     // Evaluate the exact Instant we return, so rounding cannot rediscover the same crossing
     // when the caller uses it as the next search's start.
-    var search =
-        new CrossingSearch(
-            t -> position.applyAsDouble(toJulianDate(at(start, end, t, hours))), curvature);
+    DoubleUnaryOperator julianDay = t -> toJulianDate(at(start, end, t, hours));
+    var search = new CrossingSearch(julianDay, position, curvature, roundoff);
     double b = search.value(hours);
     double crossing = search.find(0.0, hours, search.value(0.0), b);
     if (Double.isNaN(crossing) && b == 0.0) {
-      // Include a zero endpoint only when it crosses, rather than touches, the horizon.
-      Instant after = end.plusMillis(1);
-      if (range.contains(after, deltaT)
-          && search.value(max(0.0, hours - TIME_TOLERANCE)) < 0.0
-          && position.applyAsDouble(toJulianDate(after)) > 0.0) {
+      double before = max(0.0, hours - TIME_TOLERANCE);
+      // The endpoint slope can differ from the chord slope by at most M*w/2.
+      // Use the actual Julian dates to account for timestamp rounding.
+      double width = search.sampleWidth(before, hours);
+      if (-search.value(before) > curvature * width * width / 2.0 + 2.0 * ulp(1.0)) {
         return Optional.of(end);
       }
     }
@@ -532,35 +551,62 @@ public final class SolarEvents {
     return time.isAfter(end) ? end : time;
   }
 
-  private record CrossingSearch(DoubleUnaryOperator function, double curvature) {
+  private static final class CrossingSearch {
+    private final DoubleUnaryOperator julianDay;
+    private final DoubleUnaryOperator position;
+    private final double curvature;
+    private final double roundoff;
+    private int remaining = MAX_SEARCH_EVALUATIONS;
+
+    CrossingSearch(
+        DoubleUnaryOperator julianDay,
+        DoubleUnaryOperator position,
+        double curvature,
+        double roundoff) {
+      this.julianDay = julianDay;
+      this.position = position;
+      this.curvature = curvature;
+      this.roundoff = roundoff;
+    }
+
+    double sampleWidth(double start, double end) {
+      return (julianDay.applyAsDouble(end) - julianDay.applyAsDouble(start)) * 24.0;
+    }
+
     double value(double time) {
-      return function.applyAsDouble(time);
+      if (remaining == 0) {
+        throw new ArithmeticException("solar event search exceeded its evaluation limit");
+      }
+      remaining--;
+      return position.applyAsDouble(julianDay.applyAsDouble(time));
     }
 
     double find(double start, double end, double a, double b) {
-      double width = end - start;
-      double slope = (b - a) / width;
-      double slopeError = curvature * width / 2.0 + 2.0 * ROUNDING_ERROR / width;
-      // Standard interpolation bounds, using the conservative curvature estimate above:
-      // slope error M*w/2, chord error M*w*w/8 (https://dlmf.nist.gov/3.3.E5).
-      // Discard only intervals that cannot rise through zero; otherwise search left first.
-      if (slope + slopeError <= 0.0
+      // Standard interpolation bounds: slope error M*w/2, chord error M*w*w/8.
+      // https://dlmf.nist.gov/3.3.E5. Use the actual Julian-date sample spacing,
+      // so the margin accounts for position roundoff alone.
+      double width = sampleWidth(start, end);
+      double curvatureWidthSquared = curvature * width * width;
+      double slopeMargin = curvatureWidthSquared / 2.0 + 2.0 * roundoff;
+      double change = b - a;
+      if (change <= -slopeMargin
           || ((a > 0.0) == (b > 0.0)
-              && min(abs(a), abs(b)) > curvature * width * width / 8.0 + ROUNDING_ERROR)) {
+              && min(abs(a), abs(b)) > curvatureWidthSquared / 8.0 + roundoff)) {
         return Double.NaN;
       }
-      if (a < 0.0 && b >= 0.0 && slope > slopeError) {
+      if (a < 0.0 && b >= 0.0 && change > slopeMargin) {
         return refine(start, end, a, b);
       }
-      if (width <= TIME_TOLERANCE) {
+      double duration = end - start;
+      if (duration <= TIME_TOLERANCE) {
         return a < 0.0 && b > 0.0 ? end : Double.NaN;
       }
-      double middle = start + width / 2.0;
+      double middle = start + duration / 2.0;
       double m = value(middle);
       // Keep a shallow crossing inside a bracket instead of splitting at zero.
       // Stay strictly inside the interval so both recursive searches progress.
       if (m == 0.0 && (a != 0.0 || b != 0.0)) {
-        middle += min(TIME_TOLERANCE, width / 4.0);
+        middle += min(TIME_TOLERANCE, duration / 4.0);
         m = value(middle);
       }
       double left = find(start, middle, a, m);

@@ -57,7 +57,7 @@ class ElevationCrossingsTest {
                 if (event.isPresent()) {
                   var time = event.orElseThrow();
                   assertThat(time).isAfter(start).isBeforeOrEqualTo(end);
-                  assertTransition(positions, time, latitude, target, rising, 100_000_000, context);
+                  assertTransition(positions, time, latitude, target, rising, 101_000_000, context);
                 } else {
                   double before = elevation(positions, start, latitude, target);
                   for (int i = 1; i <= 96; i++) {
@@ -76,16 +76,31 @@ class ElevationCrossingsTest {
   }
 
   @Test
+  void spaIncludesAnEndpointAtTheReportedElevation() {
+    var positions = SolarPositions.spa();
+    var end = Instant.parse("2024-03-20T06:00:00Z");
+    double latitude = 48.21, longitude = 16.37, height = 190.0;
+    double angle = positions.at(end, latitude, longitude, height, DELTA_T).elevation();
+    var target = new ElevationTarget(angle, height);
+
+    assertThat(
+            positions.nextElevationRise(
+                end.minusSeconds(300), end, latitude, longitude, DELTA_T, target))
+        .contains(end);
+  }
+
+  @Test
   void spaCrossingsUseObserverHeight() {
     var positions = SolarPositions.spa();
     var start = Instant.parse("2024-12-21T00:00:00Z");
     var target = new ElevationTarget(0, 5000);
-    // Shallow winter crossings make the height effect exceed the 1 ms search resolution.
+    // Grazing winter crossings make the height effect exceed the search resolution.
     for (boolean rising : new boolean[] {true, false}) {
       var event =
-          crossing(positions, rising, start, start.plus(Duration.ofDays(1)), 63, target)
+          crossing(positions, rising, start, start.plus(Duration.ofDays(1)), 66.559, target)
               .orElseThrow();
-      assertTransition(positions, event, 63, target, rising, 1_100_000, "height-adjusted crossing");
+      assertTransition(
+          positions, event, 66.559, target, rising, 101_000_000, "height-adjusted crossing");
     }
   }
 
@@ -105,7 +120,8 @@ class ElevationCrossingsTest {
         assertThat(event).isEqualTo(standard.orElseThrow());
         assertThat(crossing(positions, rising, event, END, LATITUDE, target)).isEmpty();
         var bounded = crossing(positions, rising, START, event, LATITUDE, target).orElseThrow();
-        assertThat(Duration.between(event, bounded).abs()).isLessThan(Duration.ofNanos(1_100_000));
+        assertThat(Duration.between(event, bounded).abs())
+            .isLessThanOrEqualTo(Duration.ofMillis(100));
       }
     }
   }
@@ -124,7 +140,7 @@ class ElevationCrossingsTest {
               ? events.nextRise(START, END, LATITUDE, LONGITUDE, DELTA_T, cutoff)
               : events.nextSet(START, END, LATITUDE, LONGITUDE, DELTA_T, cutoff);
       assertThat(event).isEqualTo(standard.orElseThrow());
-      assertTransition(positions, event, LATITUDE, target, rising, 100_000_000, "cutoff crossing");
+      assertTransition(positions, event, LATITUDE, target, rising, 101_000_000, "cutoff crossing");
     }
   }
 

@@ -1,7 +1,9 @@
 package net.e175.klaus.solarpositioning.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import net.e175.klaus.solarpositioning.JulianDate;
@@ -44,6 +46,13 @@ class JulianDateTest {
     double elapsedJulianDays =
         new JulianDate(halfSecondLater).julianDate() - new JulianDate(start).julianDate();
     assertEquals(0.5 / 86_400, elapsedJulianDays, 1e-9);
+  }
+
+  @Test
+  void julianDateIsMonotoneAcrossASecondBoundary() {
+    var before = new JulianDate(Instant.ofEpochSecond(90_000_000_023L, 999_999_999), 0);
+    var after = new JulianDate(Instant.ofEpochSecond(90_000_000_024L), 0);
+    assertTrue(before.julianDate() <= after.julianDate());
   }
 
   @Test

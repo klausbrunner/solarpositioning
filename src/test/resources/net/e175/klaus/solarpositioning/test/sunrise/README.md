@@ -24,6 +24,6 @@ The generator samples at five-minute intervals and refines detected crossings to
 one millisecond. This is sufficient for these selected cases, not an oracle for
 arbitrarily narrow crossings. A separate Java test constructs a roughly one-second
 rise/set pair. Event counts must match exactly; timing tolerance uses SPA's stated
-0.0003° angular uncertainty divided by local elevation rate, plus 2 ms. Transit
+0.0003° angular uncertainty divided by local elevation rate, plus 101 ms. Transit
 tolerance is one second. The south-pole sunrise differs by about nine seconds
 because the elevation changes exceptionally slowly.

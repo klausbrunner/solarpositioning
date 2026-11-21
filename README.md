@@ -133,8 +133,7 @@ geometric horizon, allowing for average atmospheric refraction and the Sun's app
 Twilight and custom elevations use exactly the selected geometric angle, without an
 additional refraction correction.
 
-The search resolves crossings to one millisecond, but don't expect to observe sunrise that
-precisely: weather and terrain can shift it by minutes
+Search resolution is 100 ms. Note that weather and terrain can shift observed sunrise by minutes
 ([USNO](https://aa.usno.navy.mil/faq/RST_defs)). Shallow crossings also amplify the position
 model's angular uncertainty. Transit means meridian passage, not necessarily maximum elevation.
 

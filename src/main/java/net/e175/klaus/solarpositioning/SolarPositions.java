@@ -215,8 +215,8 @@ public final class SolarPositions {
    *
    * <p>The angle is geometric without an atmosphere, apparent with one. Refraction cutoff jumps
    * count as crossings; a tangency alone does not. Height affects parallax, not the visible
-   * horizon. Searches use the same one-millisecond numerical resolution as {@link SolarEvents}.
-   * Passing a returned instant as the next start searches for the following event.
+   * horizon. Searches use the 100 ms resolution of {@link SolarEvents}. Passing a returned instant
+   * as the next start searches for the following event.
    *
    * @param start exclusive start instant
    * @param end inclusive end instant
@@ -228,6 +228,7 @@ public final class SolarPositions {
    * @throws IllegalArgumentException for invalid coordinates, interval or delta T, nonzero height
    *     with Grena3, times outside the model's UT/TT range, or refraction too strong to guarantee a
    *     monotonic elevation mapping
+   * @throws ArithmeticException if the search reaches its evaluation limit
    * @throws NullPointerException if start, end or target is null
    */
   public Optional<Instant> nextElevationRise(
@@ -256,6 +257,7 @@ public final class SolarPositions {
    * @throws IllegalArgumentException for invalid coordinates, interval or delta T, nonzero height
    *     with Grena3, times outside the model's UT/TT range, or refraction too strong to guarantee a
    *     monotonic elevation mapping
+   * @throws ArithmeticException if the search reaches its evaluation limit
    * @throws NullPointerException if start, end or target is null
    */
   public Optional<Instant> nextElevationSet(

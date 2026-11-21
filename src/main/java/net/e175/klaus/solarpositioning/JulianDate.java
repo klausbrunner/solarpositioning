@@ -52,7 +52,11 @@ public record JulianDate(double julianDate, double deltaT) {
   }
 
   static double toJulianDate(Instant time) {
-    return 2440587.5 + time.getEpochSecond() / 86400.0 + time.getNano() / 86400e9;
+    long timestamp = time.getEpochSecond();
+    // Add the fractional day as a unit so rounding cannot reverse adjacent instants.
+    double midnight = 2440587.5 + Math.floorDiv(timestamp, 86400);
+    double seconds = Math.floorMod(timestamp, 86400) + time.getNano() / 1e9;
+    return midnight + seconds / 86400.0;
   }
 
   public double julianEphemerisDay() {

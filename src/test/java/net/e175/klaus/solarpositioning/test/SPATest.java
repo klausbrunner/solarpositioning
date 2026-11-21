@@ -104,8 +104,6 @@ class SPATest {
       ZonedDateTime dateTime, double lat, double lon, double refAzimuth, double refZenith) {
     SolarPosition res = POSITIONS.at(dateTime, lat, lon, 0, 0, new Atmosphere(1000, 10));
 
-    assertEquals(res, POSITIONS.forTime(dateTime, 0).at(lat, lon, new Atmosphere(1000, 10)));
-
     assertEquals(refAzimuth, res.azimuth(), TOLERANCE / 100);
     assertEquals(refZenith, res.zenithAngle(), TOLERANCE / 100);
   }

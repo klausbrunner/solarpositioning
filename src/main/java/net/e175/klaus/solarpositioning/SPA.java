@@ -32,20 +32,10 @@ final class SPA {
 
   static SolarEvents.Position eventPositionAtHeight(
       JulianDate time, double latitude, double longitude, double height) {
-    double phi = toRadians(latitude), u = atan(0.99664719 * tan(phi));
-    double sinPhi = sin(phi), cosPhi = cos(phi);
-    double x = cos(u) + (height * cosPhi) / 6378140;
-    double z = 0.99664719 * sin(u) + (height * sinPhi) / 6378140;
-    var parts = calculateSpaTimeDependentParts(time);
-    double delta = toRadians(parts.deltaDegrees());
-    double hourAngle = parts.nuDegrees() + longitude - parts.alphaDegrees();
-    double parallax = sin(toRadians(8.794 / (3600 * parts.r())));
-    // SPA's topocentric parallax correction in vector form, stable even at the zenith.
-    double vx = cos(delta) * cos(toRadians(hourAngle)) - x * parallax;
-    double vy = cos(delta) * sin(toRadians(hourAngle));
-    double vz = sin(delta) - z * parallax;
-    double projection = (cosPhi * vx + sinPhi * vz) / sqrt(vx * vx + vy * vy + vz * vz);
-    return new SolarEvents.Position(toDegrees(asin(max(-1.0, min(1.0, projection)))), hourAngle);
+    var position = topocentric(latitude, longitude, height, calculateSpaTimeDependentParts(time));
+    // Use the same zenith-to-elevation round trip as SolarPosition.elevation().
+    double zenith = 90.0 - position.elevation();
+    return new SolarEvents.Position(90.0 - zenith, position.geocentricHourAngle());
   }
 
   // Continuous Julian dates let event searches cross calendar boundaries without a clock jump.
@@ -124,74 +114,62 @@ final class SPA {
       final SpaTimeDependent timeDependent) {
     checkLatLonRange(latitude, longitude);
 
-    // Extract values from time-dependent parts
-    final double r = timeDependent.r;
-    final double alphaDegrees = timeDependent.alphaDegrees;
-    final double deltaDegrees = timeDependent.deltaDegrees;
+    var position = topocentric(latitude, longitude, elevation, timeDependent);
+    double elevationAngle = position.elevation();
+    double zenith = 90.0 - elevationAngle;
+    if (checkRefractionParamsUsable(pressure, temperature) && elevationAngle > REFRACTION_CUTOFF) {
+      zenith -= refractionCorrection(elevationAngle, pressure, temperature);
+    }
+    return new SolarPosition(position.azimuth(), zenith);
+  }
 
-    // Calculate observer local hour angle
-    final double hDegrees = limitTo(timeDependent.nuDegrees + longitude - alphaDegrees, 360);
+  private static Topocentric topocentric(
+      double latitude, double longitude, double height, SpaTimeDependent parts) {
+    // Geocentric local hour angle in degrees.
+    final double hDegrees = limitTo(parts.nuDegrees + longitude - parts.alphaDegrees, 360);
     final double h = toRadians(hDegrees);
 
     // Calculate the topocentric sun right ascension and sun declination
-    final double xiDegrees = 8.794 / (3600 * r);
+    final double xiDegrees = 8.794 / (3600 * parts.r);
     final double xi = toRadians(xiDegrees);
     final double phi = toRadians(latitude);
-    final double delta = toRadians(deltaDegrees);
+    final double sinPhi = sin(phi);
+    final double cosPhi = cos(phi);
+    final double delta = toRadians(parts.deltaDegrees);
     final double u = atan(0.99664719 * tan(phi));
-    final double x = cos(u) + (elevation * cos(phi)) / 6378140;
-    final double y = 0.99664719 * sin(u) + (elevation * sin(phi)) / 6378140;
+    final double x = cos(u) + (height * cosPhi) / 6378140;
+    final double y = 0.99664719 * sin(u) + (height * sinPhi) / 6378140;
+    final double sinXi = sin(xi);
 
-    final double x1 = cos(delta) - x * sin(xi) * cos(h);
-    final double deltaAlphaDegrees = toDegrees(atan2(-x * sin(xi) * sin(h), x1));
+    final double x1 = cos(delta) - x * sinXi * cos(h);
+    final double deltaAlphaDegrees = toDegrees(atan2(-x * sinXi * sin(h), x1));
     final double deltaPrime =
-        atan2((sin(delta) - y * sin(xi)) * cos(toRadians(deltaAlphaDegrees)), x1);
+        atan2((sin(delta) - y * sinXi) * cos(toRadians(deltaAlphaDegrees)), x1);
 
-    // Calculate the topocentric local hour angle,
-    final double hPrimeDegrees = hDegrees - deltaAlphaDegrees;
-    final double hPrime = toRadians(hPrimeDegrees);
-
-    return calculateTopocentricSolarPosition(pressure, temperature, phi, deltaPrime, hPrime);
+    // Topocentric local hour angle.
+    final double hPrime = toRadians(hDegrees - deltaAlphaDegrees);
+    return new Topocentric(hDegrees, sinPhi, cosPhi, deltaPrime, hPrime, cos(hPrime));
   }
 
   private record AlphaDelta(double alpha, double delta) {}
 
-  private static SolarPosition calculateTopocentricSolarPosition(
-      final double p,
-      final double t,
-      final double phi,
-      final double deltaPrime,
-      final double hPrime) {
-    // calculate topocentric zenith angle
-    final double sinPhi = sin(phi);
-    final double cosPhi = cos(phi);
-    final double cosHPrime = cos(hPrime);
+  private record Topocentric(
+      double geocentricHourAngle,
+      double sinPhi,
+      double cosPhi,
+      double deltaPrime,
+      double hPrime,
+      double cosHPrime) {
+    double elevation() {
+      double sinElevation = sinPhi * sin(deltaPrime) + cosPhi * cos(deltaPrime) * cosHPrime;
+      // Roundoff can put the sine just outside [-1, 1] at the zenith or nadir.
+      return toDegrees(asin(max(-1.0, min(1.0, sinElevation))));
+    }
 
-    // Roundoff can put the sine just outside [-1, 1] at the zenith or nadir.
-    final double sinElevation = sinPhi * sin(deltaPrime) + cosPhi * cos(deltaPrime) * cosHPrime;
-    final double eZero = asin(max(-1.0, min(1.0, sinElevation)));
-    final double topocentricZenithAngle = calculateTopocentricZenithAngle(p, t, eZero);
-
-    // Calculate the topocentric azimuth angle
-    final double gamma = atan2(sin(hPrime), cosHPrime * sinPhi - tan(deltaPrime) * cosPhi);
-    final double gammaDegrees = limitTo(toDegrees(gamma), 360);
-    final double topocentricAzimuthAngle = limitTo(gammaDegrees + 180, 360);
-
-    return new SolarPosition(topocentricAzimuthAngle, topocentricZenithAngle);
-  }
-
-  private static double calculateTopocentricZenithAngle(double p, double t, double eZero) {
-    final double eZeroDegrees = toDegrees(eZero);
-
-    // refraction correction.
-    // 1) extremely silly values for p and t are silently ignored, disabling correction
-    // 2) only apply refraction correction when the sun is visible
-    boolean doCorrect = checkRefractionParamsUsable(p, t) && eZeroDegrees > REFRACTION_CUTOFF;
-
-    if (doCorrect) {
-      return 90 - eZeroDegrees - refractionCorrection(eZeroDegrees, p, t);
-    } else {
-      return 90 - eZeroDegrees;
+    double azimuth() {
+      double gamma = atan2(sin(hPrime), cosHPrime * sinPhi - tan(deltaPrime) * cosPhi);
+      double gammaDegrees = limitTo(toDegrees(gamma), 360);
+      return limitTo(gammaDegrees + 180, 360);
     }
   }
 

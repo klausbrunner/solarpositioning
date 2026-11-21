@@ -22,6 +22,7 @@ class SolarEventsTest {
   private static final SolarPositions GRENA_POSITIONS = SolarPositions.grena3();
   private static final SolarEvents EVENTS = SolarEvents.spa();
   private static final double DELTA_T = 69.184;
+  private static final Duration CROSSING_PROBE = Duration.ofMillis(101);
 
   @ParameterizedTest
   @CsvFileSource(resources = "sunrise/jpl_events.csv", numLinesToSkip = 1)
@@ -52,7 +53,7 @@ class SolarEventsTest {
   private static double timeTolerance(String reference, double latitude, double longitude) {
     // SPA's position uncertainty is angular, not temporal. A very shallow crossing can
     // differ by seconds even when the two ephemerides agree within 0.0003 degrees.
-    double tolerance = 0.002;
+    double tolerance = 0.101;
     if (reference != null) {
       for (String value : reference.split(";")) {
         Instant time = Instant.parse(value);
@@ -61,7 +62,7 @@ class SolarEventsTest {
                     altitude(time.plusSeconds(1), latitude, longitude)
                         - altitude(time.minusSeconds(1), latitude, longitude))
                 / 2;
-        tolerance = Math.max(tolerance, 0.0003 / speed + 0.002);
+        tolerance = Math.max(tolerance, 0.0003 / speed + 0.101);
       }
     }
     return tolerance;
@@ -285,8 +286,8 @@ class SolarEventsTest {
     assertThat(standard.transits()).hasSize(transits);
     for (var time : standard.transits()) {
       // At the equator the eastward component changes sign at upper transit.
-      var before = GRENA_POSITIONS.at(time.minusNanos(2_000_000), 0, longitude, DELTA_T);
-      var after = GRENA_POSITIONS.at(time.plusNanos(2_000_000), 0, longitude, DELTA_T);
+      var before = GRENA_POSITIONS.at(time.minus(CROSSING_PROBE), 0, longitude, DELTA_T);
+      var after = GRENA_POSITIONS.at(time.plus(CROSSING_PROBE), 0, longitude, DELTA_T);
       assertThat(Math.sin(Math.toRadians(before.azimuth()))).isPositive();
       assertThat(Math.sin(Math.toRadians(after.azimuth()))).isNegative();
     }
@@ -316,9 +317,9 @@ class SolarEventsTest {
   private static void checkGrenaCrossing(
       ZonedDateTime time, double latitude, double longitude, double horizon, int direction) {
     double before =
-        GRENA_POSITIONS.at(time.minusNanos(2_000_000), latitude, longitude, DELTA_T).elevation();
+        GRENA_POSITIONS.at(time.minus(CROSSING_PROBE), latitude, longitude, DELTA_T).elevation();
     double after =
-        GRENA_POSITIONS.at(time.plusNanos(2_000_000), latitude, longitude, DELTA_T).elevation();
+        GRENA_POSITIONS.at(time.plus(CROSSING_PROBE), latitude, longitude, DELTA_T).elevation();
     assertThat(direction * (before - horizon)).isNegative();
     assertThat(direction * (after - horizon)).isPositive();
   }
@@ -400,6 +401,53 @@ class SolarEventsTest {
     assertThat(events.nextRise(rise, end, -90, 0, 0, horizon)).isEmpty();
   }
 
+  @Test
+  void polarSolsticeDistinguishesANearMissFromShallowCrossings() {
+    var solstice = Instant.parse("2024-06-20T20:46:36.480Z");
+    var start = solstice.minusSeconds(43200);
+    var end = solstice.plusSeconds(43200);
+    double elevation = SPA_POSITIONS.at(solstice, 90, 0, DELTA_T).elevation();
+    double above = elevation + 1e-7;
+    double below = elevation - 1e-7;
+
+    assertThat(EVENTS.nextRise(start, end, 90, 0, DELTA_T, above)).isEmpty();
+    assertThat(EVENTS.nextSet(start, end, 90, 0, DELTA_T, above)).isEmpty();
+    assertThat(EVENTS.nextRise(start, end, 90, 0, DELTA_T, below).orElseThrow()).isBefore(solstice);
+    assertThat(EVENTS.nextSet(start, end, 90, 0, DELTA_T, below).orElseThrow()).isAfter(solstice);
+  }
+
+  @Test
+  void standardSunriseResolvesNearPolarGrazing() {
+    var date = LocalDate.of(2024, 3, 18);
+    // The daily and seasonal elevation changes nearly cancel at these locations.
+    var spa = EVENTS.forDate(date, ZoneOffset.UTC, 89.93706744266441, -97.93485915869572, DELTA_T);
+    var grena =
+        SolarEvents.grena3()
+            .forDate(date, ZoneOffset.UTC, 89.93707458685051, -98.24191266456087, DELTA_T);
+    for (var day : List.of(spa, grena)) {
+      assertThat(day.rises()).hasSize(1);
+      assertThat(day.sets()).isEmpty();
+    }
+  }
+
+  @Test
+  void flatSearchReportsAnExhaustedEvaluationLimit() {
+    var start = Instant.parse("2024-03-20T12:00:00Z");
+    double startJulianDate = new JulianDate(start, 0).julianDate();
+    var events =
+        SolarEvents.of(
+            (time, lat, lon) ->
+                new SolarEvents.Position(0, 360 * (time.julianDate() - startJulianDate)),
+            2024,
+            2024);
+
+    var failure =
+        assertThrows(
+            ArithmeticException.class,
+            () -> events.nextRise(start, start.plusSeconds(7200), 0, 0, 0, 0.0));
+    assertThat(failure).hasMessage("solar event search exceeded its evaluation limit");
+  }
+
   @ParameterizedTest
   @ValueSource(ints = {-1, 1})
   void assignsMidnightCrossingToFollowingDate(int direction) {
@@ -461,9 +509,9 @@ class SolarEventsTest {
         var splits = new ArrayList<Instant>();
         splits.add(start.plusSeconds(1 + random.nextInt(2 * 86400 - 1)));
         for (var event : whole) {
-          splits.add(event.minusMillis(2));
+          splits.add(event.minusMillis(101));
           splits.add(event);
-          splits.add(event.plusMillis(2));
+          splits.add(event.plusMillis(101));
         }
         for (var split : splits) {
           if (!split.isAfter(start) || !split.isBefore(end)) continue;
@@ -495,7 +543,7 @@ class SolarEventsTest {
     for (int i = 0; i < expected.size(); i++) {
       assertThat(Duration.between(expected.get(i), actual.get(i)).abs())
           .as("event %s", expected.get(i))
-          .isLessThanOrEqualTo(Duration.ofMillis(1));
+          .isLessThanOrEqualTo(Duration.ofMillis(100));
     }
   }
 
@@ -518,9 +566,9 @@ class SolarEventsTest {
             2024,
             2024);
     var day = events.forDate(date, ZoneOffset.UTC, 30, 15, 60, 0.0);
-    compareEvents("2024-03-20T04:59:00Z", day.rises(), 0.002);
-    compareEvents("2024-03-20T10:59:00Z", day.transits(), 0.002);
-    compareEvents("2024-03-20T16:59:00Z", day.sets(), 0.002);
+    compareEvents("2024-03-20T04:59:00Z", day.rises(), 0.101);
+    compareEvents("2024-03-20T10:59:00Z", day.transits(), 0.101);
+    compareEvents("2024-03-20T16:59:00Z", day.sets(), 0.101);
     assertThat(day.stateAtStart()).isEqualTo(SolarEvents.HorizonState.BELOW);
     assertThrows(
         IllegalArgumentException.class,
@@ -531,10 +579,9 @@ class SolarEventsTest {
   }
 
   @ParameterizedTest
-  @ValueSource(doubles = {-3600, -3599.9995, -3599.998})
+  @ValueSource(doubles = {-3600, -3599.95, -3599.8})
   void dailyLookbackRespectsTheEphemerisLowerBound(double deltaT) {
-    // TT begins at the provider's lower bound, 0.5 ms after it, or 2 ms after it.
-    // The first two dates used to fail because the 1 ms lookback went outside that range.
+    // Exercise both sides of the 100 ms lookback limit.
     var events = SolarEvents.grena3();
     var date = LocalDate.of(2010, 1, 1);
     var zone = ZoneOffset.ofHours(-1);
@@ -550,7 +597,7 @@ class SolarEventsTest {
     for (int i = 0; i < expected.size(); i++) {
       assertThat(actual.get(i)).hasSize(1);
       assertThat(Duration.between(expected.get(i), actual.get(i).get(0).toInstant()).abs())
-          .isLessThanOrEqualTo(Duration.ofMillis(1));
+          .isLessThanOrEqualTo(Duration.ofMillis(100));
     }
   }
 
@@ -576,22 +623,22 @@ class SolarEventsTest {
   }
 
   @ParameterizedTest
-  @ValueSource(doubles = {0, 60})
-  void endpointProbeRespectsUtAndTtUpperBounds(double deltaT) {
-    var upperBound = Instant.parse("2111-01-01T00:00:00Z");
+  @CsvSource({"2110-12-31T00:00:00Z, 0", "2111-01-01T00:00:00Z, 0", "2111-01-01T00:00:00Z, 60"})
+  void includesExactCrossingsWithoutSamplingPastEnd(Instant upperBound, long deltaT) {
+    var end = upperBound.minusSeconds(deltaT);
+    double endJulianDate = new JulianDate(end, 0).julianDate();
     double upperJulianDate = new JulianDate(upperBound, 0).julianDate();
     var events =
         SolarEvents.of(
             (time, lat, lon) -> {
-              assertThat(time.julianDate()).isLessThanOrEqualTo(upperJulianDate);
+              assertThat(time.julianDate()).isLessThanOrEqualTo(endJulianDate);
               assertThat(time.julianEphemerisDay()).isLessThanOrEqualTo(upperJulianDate);
               double hours = (time.julianEphemerisDay() - upperJulianDate) * 24;
               return new SolarEvents.Position(hours * 1e-4, hours * 15);
             },
             2010,
             2110);
-    var end = upperBound.minusSeconds((long) deltaT);
-    assertThat(events.nextRise(end.minusSeconds(10), end, 0, 0, deltaT, 0.0)).isEmpty();
+    assertThat(events.nextRise(end.minusSeconds(10), end, 0, 0, deltaT, 0.0)).contains(end);
   }
 
   @Test
@@ -599,7 +646,7 @@ class SolarEventsTest {
     var date = LocalDate.of(2024, 3, 20);
     Instant start = date.atStartOfDay(ZoneOffset.UTC).toInstant(), end = start.plusSeconds(86400);
     Instant transit = EVENTS.nextTransit(start, end, 0, DELTA_T).orElseThrow();
-    assertThat(EVENTS.nextTransit(start, transit.minusMillis(2), 0, DELTA_T)).isEmpty();
+    assertThat(EVENTS.nextTransit(start, transit.minusMillis(101), 0, DELTA_T)).isEmpty();
     assertThat(EVENTS.nextTransit(transit, end, 0, DELTA_T)).isEmpty();
     assertThat(EVENTS.nextTransit(start, start, 0, DELTA_T)).isEmpty();
     assertThrows(IllegalArgumentException.class, () -> EVENTS.nextTransit(end, start, 0, DELTA_T));
