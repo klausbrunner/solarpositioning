@@ -294,7 +294,7 @@ public final class SolarEvents {
     checkLatLonRange(latitude, longitude);
     for (double elevation : elevationAngles) checkElevationAngle(elevation);
     ZonedDateTime start = date.atStartOfDay(zone), end = date.plusDays(1).atStartOfDay(zone);
-    checkInterval(start.toInstant(), end.toInstant(), deltaT);
+    checkInterval(range, start.toInstant(), end.toInstant(), deltaT);
     var transits =
         collect(start, end, deltaT, t -> nextTransit(t, end.toInstant(), longitude, deltaT));
     double initialAltitude =
@@ -505,7 +505,7 @@ public final class SolarEvents {
       double curvature,
       double roundoff,
       DoubleUnaryOperator position) {
-    checkInterval(start, end, deltaT);
+    checkInterval(range, start, end, deltaT);
     Duration duration = Duration.between(start, end);
     double hours = (duration.getSeconds() + duration.getNano() / 1e9) * HOURS_PER_SECOND;
     if (hours == 0.0) {
@@ -532,7 +532,7 @@ public final class SolarEvents {
     return Optional.of(at(start, end, crossing, hours));
   }
 
-  void checkInterval(Instant start, Instant end, double deltaT) {
+  static void checkInterval(TimeRange range, Instant start, Instant end, double deltaT) {
     if (!Double.isFinite(deltaT) || end.isBefore(start)) {
       throw new IllegalArgumentException("invalid search interval or deltaT");
     }

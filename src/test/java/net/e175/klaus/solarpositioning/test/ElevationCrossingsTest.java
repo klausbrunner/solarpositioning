@@ -75,18 +75,25 @@ class ElevationCrossingsTest {
     }
   }
 
-  @Test
-  void spaIncludesAnEndpointAtTheReportedElevation() {
-    var positions = SolarPositions.spa();
-    var end = Instant.parse("2024-03-20T06:00:00Z");
-    double latitude = 48.21, longitude = 16.37, height = 190.0;
-    double angle = positions.at(end, latitude, longitude, height, DELTA_T).elevation();
-    var target = new ElevationTarget(angle, height);
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void crossingAtTheReportedElevationBelongsToTheEndingInterval(boolean grena) {
+    var positions = grena ? SolarPositions.grena3() : SolarPositions.spa();
+    double height = grena ? 0 : 190;
+    for (boolean rising : new boolean[] {true, false}) {
+      var split = Instant.parse(rising ? "2024-03-20T06:00:00Z" : "2024-03-21T14:29:45Z");
+      for (var atmosphere : List.of(Optional.<Atmosphere>empty(), Optional.of(ATMOSPHERE))) {
+        var settings = new ElevationTarget(0, height, atmosphere);
+        var target =
+            new ElevationTarget(
+                elevation(positions, split, LATITUDE, settings), height, atmosphere);
 
-    assertThat(
-            positions.nextElevationRise(
-                end.minusSeconds(300), end, latitude, longitude, DELTA_T, target))
-        .contains(end);
+        assertThat(crossing(positions, rising, split.minusSeconds(300), split, LATITUDE, target))
+            .contains(split);
+        assertThat(crossing(positions, rising, split, split.plusSeconds(300), LATITUDE, target))
+            .isEmpty();
+      }
+    }
   }
 
   @Test
