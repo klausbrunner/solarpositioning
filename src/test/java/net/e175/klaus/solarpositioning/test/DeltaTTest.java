@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
@@ -25,6 +26,15 @@ class DeltaTTest {
     assertEquals(expected, DeltaT.estimate(dateTime.atOffset(ZoneOffset.ofHours(14))));
     assertEquals(expected, DeltaT.estimate(dateTime.atZone(ZoneOffset.ofHours(14))));
     assertThrows(DateTimeException.class, () -> DeltaT.estimate(LocalTime.NOON));
+  }
+
+  @Test
+  void testInstantInputUsesUtcDate() {
+    var time = LocalDate.of(2026, 7, 1).atTime(0, 30).atOffset(ZoneOffset.ofHours(2));
+    Instant instant = time.toInstant();
+
+    assertEquals(DeltaT.estimate(LocalDate.of(2026, 6, 30)), DeltaT.estimate(instant));
+    assertEquals(DeltaT.estimate(LocalDate.of(2026, 7, 1)), DeltaT.estimate(time));
   }
 
   private LocalDate yearCal(int year) {

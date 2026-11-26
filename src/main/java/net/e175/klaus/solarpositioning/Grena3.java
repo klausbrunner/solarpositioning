@@ -25,18 +25,18 @@ final class Grena3 {
       double latitude, double longitude, double pressure, double temperature, TimeDependent parts) {
     MathUtil.checkLatLonRange(latitude, longitude);
     var position = position(parts, latitude, longitude);
-    final double eP = position.elevationRadians();
-    final double gamma = position.azimuthRadians();
+    return new SolarPosition(
+        MathUtil.limitTo(toDegrees(position.azimuthRadians() + PI), 360.0),
+        zenithAngle(position.elevationRadians(), pressure, temperature));
+  }
 
-    // refraction correction (disabled for silly parameter values)
-    final boolean doCorrect =
-        MathUtil.checkRefractionParamsUsable(pressure, temperature) && eP > REFRACTION_CUTOFF;
-
-    final double deltaRe = doCorrect ? refractionCorrection(eP, pressure, temperature) : 0.0;
-
-    final double z = PI / 2 - eP - deltaRe;
-
-    return new SolarPosition(MathUtil.limitTo(toDegrees(gamma + PI), 360.0), toDegrees(z));
+  private static double zenithAngle(double elevation, double pressure, double temperature) {
+    double zenith = PI / 2 - elevation;
+    if (MathUtil.checkRefractionParamsUsable(pressure, temperature)
+        && elevation > REFRACTION_CUTOFF) {
+      zenith -= refractionCorrection(elevation, pressure, temperature);
+    }
+    return toDegrees(zenith);
   }
 
   private static double refractionPhase(double elevation) {
@@ -62,6 +62,24 @@ final class Grena3 {
     // Match the zenith-to-elevation conversion of the public position.
     double zenith = toDegrees(PI / 2 - position.elevationRadians());
     return new SolarEvents.Position(90.0 - zenith, toDegrees(position.hourAngleRadians()));
+  }
+
+  static double elevationCrossingValue(
+      JulianDate time,
+      double latitude,
+      double longitude,
+      ElevationTarget target,
+      double sineThreshold,
+      Atmosphere endpointAtmosphere) {
+    double elevation =
+        position(calculateTimeDependentParts(time), latitude, longitude).elevationRadians();
+    double apparentZenith =
+        endpointAtmosphere == null
+            ? Double.NaN
+            : zenithAngle(
+                elevation, endpointAtmosphere.pressure(), endpointAtmosphere.temperature());
+    return SolarEvents.crossingValueFromZenith(
+        toDegrees(PI / 2 - elevation), apparentZenith, target.angle(), sineThreshold);
   }
 
   // Unrefracted angles in radians; azimuth is measured westwards from south.

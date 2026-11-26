@@ -20,7 +20,7 @@ Java 17 or newer. No additional runtime dependencies.
 <dependency>
     <groupId>net.e175.klaus</groupId>
     <artifactId>solarpositioning</artifactId>
-    <version>[3.0.1,)</version>
+    <version>[3.0.3,)</version>
 </dependency>
 ```
 
@@ -36,33 +36,32 @@ To get a position with atmospheric refraction correction:
 var dateTime = ZonedDateTime.now();
 var deltaT = DeltaT.estimate(dateTime);
 var positions = SolarPositions.spa();
-var position = positions.at(
-    dateTime,
+var snapshot = positions.forTime(dateTime, deltaT);
+var position = snapshot.at(
     48.21, // latitude (degrees)
     16.37, // longitude (degrees)
     190, // height above sea level (m)
-    deltaT, // delta T (s)
     new Atmosphere(1010, 11)); // local pressure (hPa), temperature (°C)
 
 System.out.println(position);
 System.out.println(position.elevation());
 ```
 
-`at` accepts either a `ZonedDateTime` or an `Instant`; angles are in degrees.
+`forTime` accepts either a `ZonedDateTime` or an `Instant`. For a one-off calculation,
+you can also pass the time and location directly to `positions.at(...)`. Angles are in degrees.
 Omit the atmosphere for an unrefracted position, and omit height to assume sea level.
 Use `SolarPositions.grena3()` for Grena3, which requires zero height.
 
 ### Many locations at one time
 
-If you're calculating positions for many locations, prepare the time-dependent work once:
+Reuse the same snapshot to calculate positions for more locations at that time:
 
 ```java
-var snapshot = positions.forTime(dateTime, deltaT);
 var vienna = snapshot.at(48.21, 16.37, 190);
 var berlin = snapshot.at(52.52, 13.41, 34);
 ```
 
-This works with both models, using the same height and atmosphere options as `at`.
+This works with both models, using the height and atmosphere options above.
 The snapshot also exposes `rightAscension()` and `declination()` in degrees, and
 `earthRadiusVector()` as an `OptionalDouble` in astronomical units (SPA only).
 

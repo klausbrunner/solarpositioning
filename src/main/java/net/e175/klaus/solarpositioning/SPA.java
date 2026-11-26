@@ -27,15 +27,29 @@ final class SPA {
   record SpaTimeDependent(double r, double nuDegrees, double alphaDegrees, double deltaDegrees) {}
 
   static SolarEvents.Position eventPosition(JulianDate time, double latitude, double longitude) {
-    return eventPositionAtHeight(time, latitude, longitude, 0.0);
-  }
-
-  static SolarEvents.Position eventPositionAtHeight(
-      JulianDate time, double latitude, double longitude, double height) {
-    var position = topocentric(latitude, longitude, height, calculateSpaTimeDependentParts(time));
+    var position = topocentric(latitude, longitude, 0.0, calculateSpaTimeDependentParts(time));
     // Use the same zenith-to-elevation round trip as SolarPosition.elevation().
     double zenith = 90.0 - position.elevation();
     return new SolarEvents.Position(90.0 - zenith, position.geocentricHourAngle());
+  }
+
+  static double elevationCrossingValue(
+      JulianDate time,
+      double latitude,
+      double longitude,
+      ElevationTarget target,
+      double sineThreshold,
+      Atmosphere endpointAtmosphere) {
+    double elevation =
+        topocentric(latitude, longitude, target.height(), calculateSpaTimeDependentParts(time))
+            .elevation();
+    double apparentZenith =
+        endpointAtmosphere == null
+            ? Double.NaN
+            : zenithAngle(
+                elevation, endpointAtmosphere.pressure(), endpointAtmosphere.temperature());
+    return SolarEvents.crossingValueFromZenith(
+        90.0 - elevation, apparentZenith, target.angle(), sineThreshold);
   }
 
   // Continuous Julian dates let event searches cross calendar boundaries without a clock jump.
@@ -115,12 +129,16 @@ final class SPA {
     checkLatLonRange(latitude, longitude);
 
     var position = topocentric(latitude, longitude, elevation, timeDependent);
-    double elevationAngle = position.elevation();
-    double zenith = 90.0 - elevationAngle;
-    if (checkRefractionParamsUsable(pressure, temperature) && elevationAngle > REFRACTION_CUTOFF) {
-      zenith -= refractionCorrection(elevationAngle, pressure, temperature);
+    return new SolarPosition(
+        position.azimuth(), zenithAngle(position.elevation(), pressure, temperature));
+  }
+
+  private static double zenithAngle(double elevation, double pressure, double temperature) {
+    double zenith = 90.0 - elevation;
+    if (checkRefractionParamsUsable(pressure, temperature) && elevation > REFRACTION_CUTOFF) {
+      zenith -= refractionCorrection(elevation, pressure, temperature);
     }
-    return new SolarPosition(position.azimuth(), zenith);
+    return zenith;
   }
 
   private static Topocentric topocentric(

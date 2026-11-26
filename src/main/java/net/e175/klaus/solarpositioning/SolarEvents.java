@@ -78,11 +78,6 @@ public final class SolarEvents {
     range = new TimeRange(firstYear, lastYear);
   }
 
-  SolarEvents(PositionProvider provider, TimeRange range) {
-    this.provider = Objects.requireNonNull(provider);
-    this.range = Objects.requireNonNull(range);
-  }
-
   /**
    * Supplies unrefracted, sea-level solar positions. Julian dates are continuous UT, with TT
    * available via {@link JulianDate#julianEphemerisDay()}. Longitude is positive east.
@@ -455,10 +450,10 @@ public final class SolarEvents {
   public Optional<Instant> nextTransit(
       Instant start, Instant end, double longitude, double deltaT) {
     checkLatLonRange(0.0, longitude);
+    checkInterval(range, start, end, deltaT);
     return search(
         start,
         end,
-        deltaT,
         0.1,
         HOUR_ANGLE_ROUNDOFF,
         jd -> sin(toRadians(position(jd, 0.0, longitude, deltaT).hourAngle())));
@@ -474,7 +469,23 @@ public final class SolarEvents {
       double direction) {
     checkLatLonRange(latitude, longitude);
     checkElevationAngle(elevationAngle);
+    checkInterval(range, start, end, deltaT);
     double horizon = sin(toRadians(elevationAngle));
+    return findElevationCrossing(
+        start,
+        end,
+        latitude,
+        direction,
+        jd -> sin(toRadians(position(jd, latitude, longitude, deltaT).elevation())) - horizon);
+  }
+
+  // Searches a validated interval using a signed difference in sine of elevation.
+  static Optional<Instant> findElevationCrossing(
+      Instant start,
+      Instant end,
+      double latitude,
+      double direction,
+      DoubleUnaryOperator sineDifference) {
     // Engineering estimate for |f''| in hours: daily rotation contributes about
     // (2*pi/24)^2 * cos(latitude) = 0.069 * cos(latitude). Round up to 0.1 and
     // retain a floor for slower solar motion and parallax, including at the poles.
@@ -483,29 +494,27 @@ public final class SolarEvents {
     // The hour-angle term in sine of elevation is multiplied by cos(latitude).
     double roundoff = POSITION_ROUNDOFF + HOUR_ANGLE_ROUNDOFF * cosLatitude;
     return search(
-        start,
-        end,
-        deltaT,
-        curvature,
-        roundoff,
-        jd ->
-            direction
-                * (sin(toRadians(position(jd, latitude, longitude, deltaT).elevation()))
-                    - horizon));
+        start, end, curvature, roundoff, jd -> direction * sineDifference.applyAsDouble(jd));
+  }
+
+  // Zenith angles are in degrees. Apparent zenith is only supplied at refracted endpoints.
+  static double crossingValueFromZenith(
+      double geometricZenith, double apparentZenith, double targetAngle, double sineThreshold) {
+    // Use the same zenith-to-elevation conversion as SolarPosition.elevation().
+    if (apparentZenith >= 0.0
+        && apparentZenith <= 180.0
+        && (90.0 - apparentZenith) - targetAngle == 0.0) {
+      return 0.0;
+    }
+    return sin(toRadians(90.0 - geometricZenith)) - sineThreshold;
   }
 
   private Position position(double jd, double latitude, double longitude, double deltaT) {
     return provider.position(new JulianDate(jd, deltaT), latitude, longitude);
   }
 
-  private Optional<Instant> search(
-      Instant start,
-      Instant end,
-      double deltaT,
-      double curvature,
-      double roundoff,
-      DoubleUnaryOperator position) {
-    checkInterval(range, start, end, deltaT);
+  private static Optional<Instant> search(
+      Instant start, Instant end, double curvature, double roundoff, DoubleUnaryOperator position) {
     Duration duration = Duration.between(start, end);
     double hours = (duration.getSeconds() + duration.getNano() / 1e9) * HOURS_PER_SECOND;
     if (hours == 0.0) {

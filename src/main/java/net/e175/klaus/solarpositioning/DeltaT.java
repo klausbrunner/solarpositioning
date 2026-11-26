@@ -2,7 +2,9 @@ package net.e175.klaus.solarpositioning;
 
 import static net.e175.klaus.solarpositioning.MathUtil.polynomial;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.TemporalAccessor;
 
 /**
@@ -33,15 +35,19 @@ public final class DeltaT {
   }
 
   /**
-   * Estimate Delta T from a temporal value containing a date, such as a LocalDateTime,
-   * OffsetDateTime, or ZonedDateTime. Uses the local calendar date without converting time zones.
+   * Estimate Delta T from an {@link Instant} or a temporal value containing a date, such as a
+   * LocalDateTime, OffsetDateTime, or ZonedDateTime. Uses the UTC calendar date for an instant and
+   * the local calendar date for other values.
    *
-   * @param forDate temporal value containing a date
+   * @param forDate instant or temporal value containing a date
    * @return estimated delta T value (seconds)
-   * @throws java.time.DateTimeException if the value does not contain a date
+   * @throws java.time.DateTimeException if no calendar date can be obtained from the value
    * @see #estimate(LocalDate)
    */
   public static double estimate(final TemporalAccessor forDate) {
+    if (forDate instanceof Instant instant) {
+      return estimate(LocalDate.ofInstant(instant, ZoneOffset.UTC));
+    }
     return estimate(LocalDate.from(forDate));
   }
 

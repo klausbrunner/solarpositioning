@@ -285,49 +285,31 @@ public final class SolarPositions {
       throw new IllegalArgumentException("Grena3 requires zero observer height");
     }
     SolarEvents.checkInterval(algorithm.range, start, end, deltaT);
-    var angle = geometricThreshold(target);
-    if (angle.isEmpty()) {
+    var threshold = geometricThreshold(target);
+    if (threshold.isEmpty()) {
       return Optional.empty();
     }
-    double threshold = angle.orElseThrow();
+    double sineThreshold = sin(toRadians(threshold.getAsDouble()));
     var atmosphere = target.atmosphere().orElse(null);
     double startDay = toJulianDate(start), endDay = toJulianDate(end);
-    var events =
-        new SolarEvents(
-            (time, lat, lon) -> {
-              var position =
-                  switch (algorithm) {
-                    case SPA -> SPA.eventPositionAtHeight(time, lat, lon, target.height());
-                    case GRENA3 -> Grena3.eventPosition(time, lat, lon);
-                  };
-              // Inversion can round an exact apparent match away from the threshold.
-              double day = time.julianDate();
-              if (atmosphere != null
-                  && (day == startDay || day == endDay)
-                  && matchesApparentElevation(time, lat, lon, target, atmosphere)) {
-                return new SolarEvents.Position(threshold, position.hourAngle());
-              }
-              return position;
-            },
-            algorithm.range);
-    return rising
-        ? events.nextRise(start, end, latitude, longitude, deltaT, threshold)
-        : events.nextSet(start, end, latitude, longitude, deltaT, threshold);
-  }
-
-  private boolean matchesApparentElevation(
-      JulianDate time,
-      double latitude,
-      double longitude,
-      ElevationTarget target,
-      Atmosphere atmosphere) {
-    try {
-      return prepare(time).at(latitude, longitude, target.height(), atmosphere).elevation()
-          == target.angle();
-    } catch (IllegalArgumentException ignored) {
-      // An unrepresentable apparent position cannot match the target.
-      return false;
-    }
+    return SolarEvents.findElevationCrossing(
+        start,
+        end,
+        latitude,
+        rising ? 1.0 : -1.0,
+        day -> {
+          var time = new JulianDate(day, deltaT);
+          // Inversion can round an exact apparent match away from the geometric threshold.
+          var endpointAtmosphere = day == startDay || day == endDay ? atmosphere : null;
+          return switch (algorithm) {
+            case SPA ->
+                SPA.elevationCrossingValue(
+                    time, latitude, longitude, target, sineThreshold, endpointAtmosphere);
+            case GRENA3 ->
+                Grena3.elevationCrossingValue(
+                    time, latitude, longitude, target, sineThreshold, endpointAtmosphere);
+          };
+        });
   }
 
   private OptionalDouble geometricThreshold(ElevationTarget target) {
